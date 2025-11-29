@@ -1,2 +1,144 @@
 \pagebreak
 \section{Cài đặt thực nghiệm của tác giả}
+\subsection{Thí nghiệm trên AudioSet}
+\subsubsection{Bộ dữ liệu AudioSet}
+\begin{itemize}
+    \item AudioSet gồm hơn 2 triệu đoạn âm thanh, mỗi đoạn dài 10 giây, cắt ra từ video youtube và được gán nhãn theo 527 loại âm thanh.
+    \item Bộ dữ liệu được chia thành:
+    \begin{itemize}
+        \item Balanced training set: khoảng 22K mẫu
+        \item Full training set: khoảng 2M mẫu
+        \item Evaluation set: khoảng 20K mẫu
+    \end{itemize}
+    \item Tác giả sử dụng mean Average Precision(mAP) làm chỉ số chính để đánh giá chất lượng mô hình trên AudioSet
+\end{itemize}
+
+\subsubsection{Thiết lập thử nghiệm}
+
+Trong phần thực nghiệm với bộ dữ liệu AudioSet~\cite{gemmeke2017audio,AST}, 
+tác giả tuân theo đúng quy trình huấn luyện được mô tả trong bài báo gốc. 
+AudioSet là tập hơn 2 triệu đoạn âm thanh dài 10 giây được cắt từ các video YouTube, 
+gắn nhãn theo tập 527 loại âm thanh. Các tập con dùng trong thí nghiệm gồm:
+\begin{itemize}
+    \item Tập huấn luyện cân bằng (balanced training set): khoảng 22\,000 mẫu.
+    \item Tập huấn luyện đầy đủ (full training set): khoảng 2\,000\,000 mẫu.
+    \item Tập đánh giá (evaluation set): khoảng 20\,000 mẫu.
+\end{itemize}
+
+\paragraph{Cấu hình huấn luyện chung.}
+\begin{itemize}
+    \item Mô hình được khởi tạo từ trọng số pretrained trên ImageNet (theo Mục~2.2 của bài báo gốc).
+    \item Batch size bằng 12.
+    \item Tối ưu bằng thuật toán Adam~\cite{adam} với hàm mất mát binary cross-entropy 
+    cho bài toán gán nhãn đa nhãn (multi-label).
+    \item Pipeline huấn luyện:
+    \begin{itemize}
+        \item Với thí nghiệm trên \emph{full set}: dùng balanced sampling để cân bằng phân bố nhãn.
+        \item Data augmentation:
+        \begin{itemize}
+            \item Mixup~\cite{mixup} với tỉ lệ trộn (mixup ratio) bằng 0.5.
+            \item Spectrogram masking~\cite{specaug} với độ dài mặt nạ theo thời gian tối đa 192 frame 
+            và theo tần số tối đa 48 bin.
+        \end{itemize}
+        \item Model aggregation:
+        \begin{itemize}
+            \item Weight averaging~\cite{weight_averaging}.
+            \item Ensemble nhiều mô hình~\cite{ensemble}.
+        \end{itemize}
+    \end{itemize}
+    \item Thước đo chính dùng để đánh giá là mean Average Precision (mAP) trên tập đánh giá AudioSet.
+\end{itemize}
+
+\paragraph{Lịch huấn luyện cho từng thiết lập.}
+\begin{itemize}
+    \item \textbf{Balanced set:}
+    \begin{itemize}
+        \item Mô hình được huấn luyện trong 25 epoch.
+        \item Learning rate khởi tạo là $5 \times 10^{-5}$.
+        \item Learning rate được giảm một nửa sau mỗi 5 epoch kể từ sau epoch thứ 10
+        (tức là giảm tại các mốc 15, 20, \dots).
+    \end{itemize}
+    \item \textbf{Full set:}
+    \begin{itemize}
+        \item Mô hình được huấn luyện trong 5 epoch.
+        \item Learning rate khởi tạo là $1 \times 10^{-5}$.
+        \item Learning rate được giảm một nửa sau mỗi epoch kể từ sau epoch thứ 2
+        (tức là tại các epoch 3, 4, 5).
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Kết quả thí nghiệm}
+Với balanced AudioSet (chỉ khoảng 1\% full train), AST vẫn giữ được ưu thế rõ rệt. Một mô hình AST đơn lẻ với weight averaging đã đạt khoảng 0.347 mAP, vượt mức của các mô hình CNN+attention tốt nhất trước đó. Khi dùng ensemble-S và ensemble-M, kết quả tiếp tục tăng lên khoảng 0.363 và 0.378. Điều này cho thấy ngay cả khi dữ liệu huấn luyện rất ít, kiến trúc Transformer của AST vẫn học đặc trưng âm thanh tốt hơn và tổng quát hóa tốt hơn so với các mô hình CNN-attention hybrid.
+
+\subsubsection{Ảnh hưởng của ImageNet pretraining}
+\begin{itemize}
+    \item Thử nghiệm ablation cũng cho thấy vai trò gần như “bắt buộc” của ImageNet pretraining: nếu huấn luyện AST từ đầu, mAP trên balanced và full set chỉ quanh 0.148 và 0.366, trong khi khi khởi tạo từ trọng số ImageNet thì nhảy vọt lên khoảng 0.347 và 0.459. Khoảng chênh lệch này cho thấy ImageNet pretraining đóng vai trò rất quan trọng trong việc giúp AST đạt hiệu năng cao trên AudioSet.
+    \item Khi thay đổi loại backbone để khởi tạo (ViT-Base, ViT-Large, DeiT có/không distillation), kết quả cho thấy việc chỉ tăng kích thước mô hình (ViT-Large ~307M tham số) không quan trọng bằng chất lượng pretraining. Phiên bản DeiT có distillation, với số tham số tương đương ViT-Base (~87M), lại cho mAP cao nhất trên balanced AudioSet (0.347). Điều này gợi ý rằng chiến lược pretrain thông minh (distillation) còn quan trọng hơn việc “phóng to” mạng, và phù hợp hơn làm điểm xuất phát cho AST trên tác vụ audio tagging.
+\end{itemize}
+\subsubsection{Ảnh hưởng của Positional Embedding Adaptation}
+Tác giả sử dụng cách cut và nội suy song tuyến (bi-linear interpolation) cho positional embedding, rồi so sánh với trường hợp mô hình AST đã được pretrain nhưng positional embedding được khởi tạo lại ngẫu nhiên. Kết quả cho thấy khi reinitialize positional embedding, mAP trên balanced set còn 0.305; trong khi đó, nếu dùng nearest-neighbor interpolation thì mAP đạt 0.346, và với bi-linear interpolation (thiết lập được sử dụng trong mô hình chính) thì mAP đạt 0.347. Từ các kết quả này, tác giả ghi nhận rằng việc khởi tạo lại positional embedding không làm mô hình pretrain hoàn toàn bị phá vỡ, vì vẫn tốt hơn mô hình bị khởi tạo ngẫu nhiên toàn bộ(mAP = 0.148), nhưng vẫn gây ra suy giảm hiệu năng đáng kể so với cách thích ứng được đề xuất; đồng thời, bi-linear interpolation và nearest-neighbor interpolation không tạo ra khác biệt lớn về hiệu năng.
+
+\subsubsection{Ảnh hưởng của Patch Split Overlap}
+Tác giả so sánh hiệu năng của các mô hình AST được huấn luyện với các mức patch split overlap khác nhau. Kết quả cho thấy khi không dùng overlap, mô hình có 512 patch và đạt mAP 0.336 trên balanced set, 0.451 trên full set; với overlap-2 (657 patch) mAP tăng lên 0.342 / 0.456; với overlap-4 (850 patch) là 0.344 / 0.455; và với overlap-6 (1212 patch, cấu hình được sử dụng trong mô hình chính) là 0.347 / 0.459. Như vậy, hiệu năng có xu hướng cải thiện khi tăng độ chồng lấn patch cho cả balanced và full set, nhưng đồng thời số patch lớn hơn cũng làm chuỗi đầu vào cho Transformer dài hơn, dẫn đến chi phí tính toán tăng theo bậc hai. Tác giả cũng nhấn mạnh rằng ngay cả trong trường hợp không dùng patch split overlap, AST vẫn vượt hệ thống tốt nhất trước đó.
+
+\subsubsection{Ảnh hưởng của hình dạng và kích thước Patch}
+Tác giả so sánh cách chia spectrogram thành patch khác nhau. Spectrogram được chia thành các patch vuông 16×16, nên chuỗi patch đầu vào Transformer không theo thứ tự thời gian, và positional embedding được kỳ vọng sẽ mã hóa được thông tin không gian 2D. Tác giả so sánh với cách chia patch chữ nhật 128×2, cắt theo đúng thứ tự thời gian; khi giữ cùng diện tích patch = 256, mô hình dùng patch 128×2 (512 patch, không pretrain, mAP = 0.154) cho kết quả tốt hơn patch 16×16 (512 patch, không pretrain, mAP = 0.143). Tuy vậy, do không có mô hình ImageNet pretrained nào dùng patch 128×2, trong khi cấu hình 16×16 có thể tận dụng pretraining (mAP = 0.336), nên 16×16 vẫn là lựa chọn tối ưu hiện tại. Ngoài ra, so với patch 32×32 (128 patch, mAP = 0.139 khi không pretrain), các kết quả cho thấy patch nhỏ hơn thường cho hiệu năng tốt hơn.
+
+\subsection{Thí nghiệm trên ESC-50}
+\subsubsection{Bộ dữ liệu ESC-50}
+Bộ dữ liệu ESC\textendash 50~\cite{esc50} gồm 2\,000 đoạn âm thanh môi trường dài 5 giây,
+được tổ chức thành 50 lớp. 
+
+\subsubsection{Thiết lập thí nghiệm cho ESC-50}
+Tác giả so sánh AST với các mô hình SOTA trong hai kịch bản:
+\begin{itemize}
+    \item \textbf{AST-S}: mô hình AST chỉ sử dụng trọng số pretrained trên ImageNet.
+    \item \textbf{AST-P}: mô hình AST sử dụng trọng số pretrained trên ImageNet và AudioSet.
+\end{itemize}
+Thiết lập huấn luyện:
+\begin{itemize}
+    \item Data augmentation: frequency/time masking~\cite{specaug}.
+    \item Batch size: 48.
+    \item Tối ưu: Adam~\cite{adam}.
+    \item Số epoch: 20.
+    \item Learning rate:
+    \begin{itemize}
+        \item AST-S: learning rate khởi tạo $1\times 10^{-4}$.
+        \item AST-P: learning rate khởi tạo $1\times 10^{-5}$.
+        \item Cả hai: giảm learning rate với hệ số $0.85$ sau mỗi epoch kể từ sau epoch thứ 5.
+    \end{itemize}
+    \item Đánh giá theo chuẩn 5-fold cross-validation; mỗi thí nghiệm được lặp lại 3 lần
+    và báo cáo giá trị trung bình và độ lệch chuẩn của accuracy.
+\end{itemize}
+
+\subsubsection{Kết quả thí nghiệm}
+AST-S đạt 88.7 ± 0.7\% và AST-P đạt 95.6 ± 0.4\%, đều vượt các mốc SOTA tương ứng. Tác giả cũng lưu ý rằng mỗi fold chỉ có khoảng 1.600 mẫu huấn luyện nhưng AST vẫn hoạt động tốt ngay cả khi không dùng tiền huấn luyện AudioSet.
+
+\subsection{Thí nghiệm trên SpeechCommands}
+\subsubsection{Bộ dữ liệu SpeechCommands}
+SpeechCommands V2 gồm 105.829 đoạn ghi âm dài 1 giây của 35 lệnh thoại, được chia thành tập huấn luyện, tập validation và tập kiểm tra
+\subsubsection{Thiết lập thử nghiệm}
+Tác giả cũng đánh giá hai biến thể:
+AST-S (pretrained ImageNet) và AST-P (pretrained ImageNet + AudioSet).
+Thiết lập huấn luyện:
+\begin{itemize}
+    \item Nhiệm vụ: phân loại 35 lớp lệnh nói.
+    \item Data augmentation: frequency \& time masking~\cite{specaug}, random noise và mixup~\cite{mixup}.
+    \item Batch size: 128.
+    \item Tối ưu: Adam~\cite{adam}.
+    \item Số epoch tối đa: 20.
+    \item Learning rate:
+    \begin{itemize}
+        \item Learning rate khởi tạo $2.5\times 10^{-4}$.
+        \item Giảm learning rate với hệ số $0.85$ sau mỗi epoch kể từ sau epoch thứ 5.
+    \end{itemize}
+    \item Mô hình tốt nhất được chọn dựa trên tập validation, sau đó báo cáo accuracy trên tập test.
+    \item Mỗi cấu hình được lặp lại 3 lần và báo cáo trung bình và độ lệch chuẩn của accuracy.
+\end{itemize}
+
+\subsubsection{Kết quả thí nghiệm}
+AST-S đạt 98.11 ± 0.05\%, vượt cả mô hình SOTA không pretrain thêm và mô hình CNN được tiền huấn luyện với 200M audio; AST-P đạt 97.88 ± 0.03\%, và tác giả kết luận rằng tiền huấn luyện thêm với AudioSet là không cần thiết cho bài toán phân loại lệnh thoại này.
+
+\subsection{Nhận xét chung}
+Tác giả tổng kết rằng, dù độ dài đầu vào khác nhau (1 giây cho SpeechCommands, 5 giây cho ESC-50, 10 giây cho AudioSet) và nội dung trải từ speech đến non-speech, chúng vẫn dùng một kiến trúc AST cố định cho cả ba bộ dữ liệu và đều đạt kết quả SOTA, cho thấy tiềm năng sử dụng AST như một bộ phân loại âm thanh tổng quát.
+
