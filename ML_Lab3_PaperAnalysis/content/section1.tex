@@ -1,2 +1,7 @@
 \pagebreak
 \section{Bài toán giải quyết. Đầu vào, đầu ra}
+\subsection{Mục tiêu chính của bài nghiên cứu}
+Trong khoảng 1 thập kỷ trước 2021, mô hình CNN được coi là tiêu chuẩn cho việc phân loại âm thanh dựa vào ý tưởng âm thanh thành hình ảnh (phổ âm) rồi sử dụng CNN để xử lý. Tuy nhiên bản thân mô hình CNN tồn tại một số điểm yếu nhất định, đặc biệt là khả năng nhận biệt long-range global context kém với ít lớp tích chập khiến cho kết quả vẫn còn hạn chế. \\
+Khi mô hình Transformer ra đời, một số bài nghiên cứu đã thử nghiệm việc tạo ra mô hình lai giữa CNN và một lớp Attention của mô hình Transformer để khắc phục nhược điểm này. Kết quả là mô hình lai CNN-Attention này đạt được kết quả tốt nhất từ trước tới giờ.\\
+\textbf{Bài toán đặt ra của bài nghiên cứu: }Liệu cơ chế tích chập của CNN có còn cần thiết hay chỉ cần dùng mô hình Transformer là đủ để tạo ra mô hình state-of-the-art trong việc phân loại âm thanh. Kết quả cho ra của bài nghiên cứu này là mô hình Audio Spectrogram Transformer (AST) đạt được kết quả tốt nhất.\\
+\textbf{Input và Output: }Mô hình AST nhận vào âm thanh đã được xử lí thành các ảnh Log-Mel Spectrogram và trả về một vector chứa xác suất mà âm thanh có các loại tiếng (động vật, công trình, đường phố,...) khác nhau. Chi tiết về cách hoạt động của mô hình sẽ được nói ở mục sau.

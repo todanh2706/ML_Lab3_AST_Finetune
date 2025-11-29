@@ -1,2 +1,30 @@
 \pagebreak
 \section{Cài đặt thực nghiệm của nhóm}
+\subsection{Dataset}
+Nhóm chúng em dự kiến sử dụng bộ dataset \textbf{UrbanSound8K} để thực hiện train và test mô hình AST. Một số đặc điểm của dataset:
+\begin{itemize}
+    \item \textbf{Số lượng: }8732 file âm thanh .wav
+    \item \textbf{Độ dài:} Tối đa 4 giây, có thể ngắn hơn
+    \item \textbf{Phân loại} thành 10 lớp âm thanh đô thị: Tiếng máy lạnh, Còi xe, Trẻ em chơi đùa, Chó sủa, Tiếng khoan, Động cơ nổ máy, Tiếng súng, Tiếng búa máy, Còi hụ, Nhạc đường phố.
+    \item \textbf{Cấu trúc: }Được chia thành 10 folds để train, validate và test.
+\end{itemize}
+\subsection{Kế hoạch thực nghiệm}
+Nhóm sẽ sử dụng 2 model được cung cấp trong source là AST-S (mô hình AST với pretrain trên ImageNet) và AST-P (AST pretrain trên ImageNet và AudioSet) để train và đánh giá.
+Nhóm dự định xử lý dữ liệu từ bộ UrbanSound8K bằng cách:
+\begin{itemize}
+    \item Resampling tất cả các file âm thanh về 16kHz, đây là sample mẫu được dùng trong các phần thực nghiệmc của bài báo.
+    \item Xử lí độ dài: AST có cơ chế interpolation để tiếp nhận độ dài âm thanh khác nhau, tuy nhiên để cho ra kết qua tốt nhất, nhóm có thể điều chỉnh độ dài của các file âm thanh sang cùng mức 10s bằng cách cho lặp lại hoặc để padding cho phần còn thiếu.
+    \item Chuyển thành Spectrogram: Các file âm thanh sau khi xử lý sample và độ dài sẽ được đổi thành log-Mel Spectrogram để train và test Model.
+\end{itemize}
+Sau khi thực hiện preprocess dữ liệu, nhóm sẽ tiến hành train và đánh giá. Phương pháp được dùng là 10-fold cross validation (train trên fold 1 - 9, test trên fold 10, lặp lại tới khi test đủ 10 fold), các hyperparameter sẽ được dùng giống như cách tác giả dùng trong bài báo với tập ESC-50:
+\begin{itemize}
+    \item \textbf{Optimizer}: Adam
+    \item \textbf{Learning rate: } 1e-5
+    \item \textbf{Epochs: }10 - 20 vòng
+    \item \textbf{Batch size: }24 - 48
+    \item \textbf{Augmentation: }Bật SpecAugment (Che thời gian/tần số) để chống học vẹt.
+\end{itemize}
+Sau khi có kết quả cho từng fold, nhóm sẽ tính $mean \pm std$ để so sánh với bài báo gốc.
+
+
+
