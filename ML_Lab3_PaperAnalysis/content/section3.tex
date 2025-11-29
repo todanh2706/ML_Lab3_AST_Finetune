@@ -1,0 +1,80 @@
+\pagebreak
+\section{Mô hình đề xuất của tác giả}
+Mô hình được đề xuất kế thừa kiến trúc \textit{Vision Transformer (ViT)} đã được pretrain trên ImageNet, sau đó được điều chỉnh để phù hợp với bài toán phân loại âm thanh. Ý tưởng chính là chuyển đổi tín hiệu âm thanh từ miền thời gian sang miền tần số để tạo ra biểu diễn dạng ảnh (spectrogram), từ đó tận dụng khả năng học đặc trưng mạnh mẽ của Transformer.
+
+\subsection{Kiến trúc tổng thể}
+
+Audio Spectrogram Transformer (AST) được xây dựng theo kiến trúc \textbf{pure Transformer}, hoàn toàn không sử dụng bất kỳ lớp Convolutional Neural Network (CNN) nào. Mô hình khai thác cơ chế \textit{multi-head self-attention} để học các quan hệ phụ thuộc dài hạn trong spectrogram.
+
+\subsection{Biểu diễn đầu vào}
+
+Đầu vào của mô hình là ảnh \textbf{Log-Mel Spectrogram} được trích xuất từ tín hiệu waveform. Spectrogram được tính theo quy trình:
+
+\begin{itemize}
+    \item Windowing: Hamming window $25\,\text{ms}$,
+    \item Hop size: $10\,\text{ms}$,
+    \item Số lượng filterbank Mel: $128$.
+\end{itemize}
+
+Với đoạn âm thanh dài $t$ giây, spectrogram thu được có kích thước:
+
+\[
+128 \times 100t.
+\]
+
+Spectrogram sau đó được chuẩn hóa và điều chỉnh kích thước để phù hợp với đầu vào ViT.
+
+\subsection{Patching}
+
+Spectrogram được chia thành các patch kích thước $16 \times 16$. AST sử dụng \textbf{stride = 10}, dẫn đến hiện tượng overlap $6$ điểm theo cả trục tần số và trục thời gian.
+
+Số lượng patch được tính bởi:
+
+\[
+N = 12 \times \Big\lceil \frac{100t - 16}{10} \Big\rceil.
+\]
+
+Trong đó $12$ là số patch theo trục tần số. Mỗi patch được flatten để tạo thành vector 1 chiều.
+
+\subsection{Patch Embedding}
+
+Mỗi patch sau khi flatten được đưa qua một lớp Linear Projection để thu được embedding vector kích thước $768$ (embedding dimension của ViT-Base).
+
+Vì ViT gốc được pretrain trên ảnh RGB (3-channel), còn spectrogram chỉ có 1 channel, trọng số đầu vào được khởi tạo bằng cách \textbf{average-weighting} từ 3 channel của ViT sang 1 channel.
+
+\subsection{Positional Embedding}
+
+Để bảo toàn thông tin vị trí trên không gian thời gian–tần số, mỗi patch embedding được cộng thêm một vector positional embedding (learnable).
+
+Do ViT gốc hoạt động trên ảnh vuông (ví dụ $384\times384$ với positional grid $24\times24$), còn spectrogram lại có dạng hình chữ nhật, nhóm tác giả đề xuất phương pháp \textbf{``crop-and-bilinear-interpolate''} đối với positional embedding:
+
+\begin{itemize}
+    \item Crop số hàng từ $24$ xuống $12$ để phù hợp chiều frequency,
+    \item Bilinear interpolate số cột từ $24$ lên chiều thời gian tương ứng (ví dụ $100$).
+\end{itemize}
+
+Cách này giúp positional embedding trở nên tương thích hoàn toàn với kích thước spectrogram.
+
+\subsection{Transformer Encoder}
+
+Chuỗi token đầu vào có dạng:
+
+\[
+[\text{CLS}], x_1, x_2, \dots, x_N.
+\]
+
+Bộ \textit{Transformer Encoder} trong AST được cấu hình như sau:
+
+\begin{itemize}
+    \item 12 Transformer layers,
+    \item 12 attention heads,
+    \item Hidden size: 768.
+\end{itemize}
+
+Tất cả trọng số đều được khởi tạo từ ViT pretrained trên ImageNet để tận dụng khả năng nhận diện cấu trúc hình học đã học trước.
+
+\subsection{Classification Head}
+
+Sau Transformer Encoder, embedding của token \texttt{[CLS]} được dùng làm global representation của toàn bộ tín hiệu. Token này được truyền qua một lớp Linear mới (thay thế classification head của ViT) và một hàm kích hoạt Sigmoid để thực hiện phân loại đa nhãn.
+
+Kết quả cuối cùng là vector xác suất tương ứng với từng loại âm thanh như tiếng chó, mèo, gà, chim, chuột, \ldots

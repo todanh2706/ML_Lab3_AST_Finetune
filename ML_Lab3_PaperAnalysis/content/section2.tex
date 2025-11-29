@@ -1,0 +1,46 @@
+\pagebreak
+\section{Công trình liên quan, quá trình phát triển}
+\subsection{Hidden Markov Models và Gaussian Mixture Models \cite{hui2019speech}}
+Là phương pháp phổ biến nhất, mạnh nhất những năm 1980 đến tận trước 2010. Người ta tiền xử lý dữ liệu waveform của audio thủ công bằng các thuật toán như Fourier Transform, Cepstral Analysis để tạo ra các thuộc tính như MFCC (\textit{Mel-Frequency Cepstral Coefficient}).\\
+Về MFCC, đây là một loại đặc trưng âm thanh được sử dụng làm đầu vào cho mô hình GMM/HMM, nó chuyển đổi dữ liệu waveform thành một tập hợp các con số (thường là 12-40 hệ số) mà máy tính có thể phân tích, nhưng được lọc để gắn với cách tai người cảm nhận âm thanh hơn. Quá trình gồm tách khung, biến đổi Fourier (để xem tần số), lọc bằng bộ lọc Mel (làm nổi bật các tần số thấp mà tai người nhạy cảm), biến đổi (logarit, sau đó biến đổi cosin rời rạc (DCT)) sau cùng tạo ra các hệ số MFCC.\\
+GMM (\textit{Gaussian Mixture Model}) là mô hình dùng để gán một xác suất cho một âm thanh ví dụ một đoạn âm thanh nghe giống “A” hay “B”. HMM chia đoạn âm thanh đó thành nhiều state (số lượng state do người cài đặt), ứng với mỗi state GMM sẽ có một hàm b tương ứng để tính toán xác suất mà một vector MFCC thuộc về state đó (ví dụ b1(O1) là xác suất mà vector O1 thuộc về s1).\\
+HMM (\textit{Hidden Markov Model}) là thành phần gom các vector về các state để tổ chức trình tự cho chúng bằng cách tính toán xác suất chuyển đổi từ trạng thái này sang trạng thái khác. Sau đó HMM trả về một bộ xác suất để giúp GMM đoán được chính xác âm thanh kế tiếp. Ví dụ kế âm "M" thường sẽ là âm "ơ", "a", "e" chứ không thể là âm "n", "k", "m".\\
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{img/GMMHMM.png}
+    \caption{Ví dụ minh hoạ cho GMM-HMM. Bài toán nhận diện hành động của con người. \cite{talha2017human}}
+    \label{fig:placeholder}
+\end{figure}
+\subsection{Mô hình Hybrid LST-CNN Attention}
+Nền tảng của CNN (\textit{Convolutional Neural Network}) xuất hiện vào năm 1989 trong bài báo \cite{6795724}, tại đây nhóm tác giả đã huấn luyện thành công các lớp tích chập đầu tiên bằng thuật toán lan truyền ngược, dùng cho bài toán nhận diện chữ viết. Đến năm 1988, kiến trúc LeNet-5 được hoàn thiện và trở thành tiêu chuẩn cho CNN vào thời điểm đó.\\
+Đến năm 2012, AlexNet ra đời và lần đầu tiên triển khai ý tưởng biến âm thanh thành hình ảnh thông qua kỹ thuật Spetrogram rồi sử dụng CNN để xử lý. Mô hình AlexNet với kiến trúc sâu hơn hay nhiều lớp tích chập hơn, sử dụng hàm kích hoạt ReLU thay cho các hàm kích hoạt phổ biến, đồng thời kết hợp thêm cơ chế Dropout để chống overfitting. Từ đó AlexNet cải thiện được đáng kể và đạt tỉ lệ lỗi cực thấp 15.3\% trong cuộc thi ILSVRC (\textit{ImageNet Large Scale Visual Recognition Challenge}).\\
+Sau thành công của AlexNet, có rất nhiều nghiên cứu về việc ứng dụng CNN trong bài toán liên quan đến xử lý âm thanh bằng Spectrogram đã được tiến hành và nổi bật nhất phải kể đển CRNN (\textit{Convolutional Recurrent Neural Network}). Về cơ bản, mô hình CRNN chỉ đơn giản thêm một lớp RNN (\textit{Recurrent Neural Network}) vào sau các lớp CNN để có thể xử lý được chuỗi thời gian, quản lý thứ tự của các token - điều vốn rất quan trọng với âm thanh nhưng các bài toán xử lý hình ảnh thuần tuý thường xem nhẹ. RNN được sử dụng nhiều nhất là biến thể LSTM (\textit{Long Short Term Memory}). Vì có LSTM nên mô hình này có thể hiểu được thứ tự và ngữ cảnh của đoạn âm thanh, từ đó có thể tăng được hiệu suất. Tuy nhiên, LSTM cũng chỉ có bộ nhớ giới hạn nên mô hình cơ bản vẫn không nắm được toàn bộ ngữ cảnh của đoạn âm thanh. \\
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{img/CNN-LSTM.png}
+    \caption{Ví dụ minh hoạ cho mô hình CRNN. \cite{meftah2020speaker}}
+    \label{fig:placeholder}
+\end{figure}
+Sau cùng, cơ chế Attention đã được thêm vào mô hình CRNN để tạo thành mô hình Hybrid LST-CNN Attention. Cơ chế Attention giúp mô hình có thể tập trung vào những phần quan trọng của đoạn âm thanh, bỏ qua những phần không cần thiết. Nhờ vậy mà mô hình có thể nắm bắt được ngữ cảnh toàn diện hơn, từ đó cải thiện hiệu suất nhận diện. \\
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{img/CNN_Attention.png}
+    \caption{Ví dụ minh hoạ cho mô hình LSTM-CNN Attention. \cite{phalaagae2025hybrid}}
+    \label{fig:placeholder}
+\end{figure}
+\subsection{Mô hình Vision Transformer \cite{dosovitskiy2021image}}
+Áp dụng Transformer (vốn được xài cho xử lý ngôn ngữ) trực tiếp lên hình ảnh với ít sự thay đổi nhất có thể. Xử lý hình ảnh thành chuỗi các patches, từ đó biến một hình ảnh thành chuỗi các visual words \\
+Quá trình xử lý:
+\begin{itemize}
+    \item Nhận vào một hình ảnh, cắt nó thành tập hợp các ô có kích thước cố định 16x16 pixels.
+    \item Duỗi nó thành vector 1D (16x16x3 (kênh màu) = 768).
+    \item Vector đó được nhân với một ma trận trọng số để chuyển thành các dense vector có kích thước cố định (768) (gọi là các patch embeddings). Những embeddings này biểu diễn cho các visual words.
+    \item Mượn ý tưởng từ BERT language model, tác giả không nghĩ việc lấy trung bình các vector output là một cách tốt để nhận về phân loại cho cả image. Thay vào đó, họ xài một vector CLS để prepend vào phần đầu của patch sequence.
+    \item Sau đó, cộng dãy các vector (gồm cả CLS) với vector positional để nhận được đầu vào cuối cùng cho lớp encoder. Vector CLS tương tác với toàn bộ vector còn lại theo cơ chế self-attention của transformer. Xài đầu ra tương ứng của token này (qua lớp encoder) để đưa qua lớp phân loại cuối cùng.
+\end{itemize}
+Với cấu trúc như vậy, ViT giải quyết được  các vấn đề của CNN gồm:
+\begin{itemize}
+    \item Inductive Bias: ViT model xử lý tất cả các patch như các thực thể độc lập nhau, không có mối liên hệ đến các patch khác từ đó giảm được inductive bias so với CNN.
+    \item Receptive field: CNN chỉ xử lý được cục bộ vì các lớp chỉ nhìn thấy một phần nhỏ cục bộ của tấm ảnh, còn ViT xử lý toàn cục vì mỗi patch được liên kết lại với nhau thông qua các lớp đầu.
+    \item Data Hunger: CNN chỉ hoạt động tốt với tập dữ liệu nhỏ vì cách học của nó đã được xây dựng trước, còn cách học của ViT sẽ được xây dựng khi nó phân tích dữ liệu nên nó sẽ học được trên tập dữ liệu lớn hơn.
+\end{itemize}

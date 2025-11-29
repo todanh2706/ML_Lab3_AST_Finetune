@@ -1,0 +1,61 @@
+\documentclass[12pt]{article}
+\usepackage[style=numeric,sorting=none]{biblatex}
+\addbibresource{ref/ref.bib} % References
+\usepackage{hcmus-report-template}
+
+% Disable indentation on new paragraphs
+\setlength{\parindent}{0pt}
+
+% Line spacing 1.5
+\renewcommand{\baselinestretch}{1.5}
+
+% Optional: graphic path
+% \graphicspath{PATH_TO_GRAPHIC_FOLDER}
+
+% To use Times font family, uncomment this row
+% \usepackage{mathptmx}
+
+% To use roman section / subsection, uncomment these rows
+% \renewcommand{\thesection}{\Roman{section}}
+% \renewcommand{\thesubsection}{\thesection.\Roman{subsection}}
+
+% Define course name, report name and report title.
+\newcommand{\coursename}{Nhập môn học máy}
+\newcommand{\reportname}{AST: Audio Spectrogram Transformer}
+\newcommand{\reporttitle}{Phân tích bài báo}
+
+\newcommand{\studentname}{Tô Hữu Danh (23127336) \\ Nguyễn Đăng Hưng (23127050) \\ Lê Phú Cường (23127164) \\ Nguyễn Bá Đăng Khoa (23127392)}
+\newcommand{\teachername}{Thầy Võ Nhật Tân}
+
+% Header
+\lhead{\reporttitle}
+\rhead{
+Trường Đại học Khoa học Tự nhiên - ĐHQG HCM\\
+\coursename
+}
+
+% ============ DOCUMENT ============
+\begin{document}
+
+\pagenumbering{roman}
+\input{content/title.tex}
+
+\tableofcontents
+\pagebreak
+\listoftables
+\pagebreak
+\listoffigures
+\pagebreak
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\input{content/section1}
+\input{content/section2}
+\input{content/section3}
+\input{content/section4}
+\input{content/section5}
+
+% References
+\input{ref/ref.tex}
+\end{document}
