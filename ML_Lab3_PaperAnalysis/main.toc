@@ -1,0 +1,38 @@
+\contentsline {section}{\numberline {1}Bài toán giải quyết. Đầu vào, đầu ra}{1}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Mục tiêu chính của bài nghiên cứu}{1}{subsection.1.1}%
+\contentsline {section}{\numberline {2}Công trình liên quan, quá trình phát triển}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Hidden Markov Models và Gaussian Mixture Models \blx@tocontentsinit {0}\cite {hui2019speech}}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Mô hình Hybrid LST-CNN Attention}{3}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Mô hình Vision Transformer \blx@tocontentsinit {0}\cite {dosovitskiy2021image}}{4}{subsection.2.3}%
+\contentsline {section}{\numberline {3}Mô hình đề xuất của tác giả}{6}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Kiến trúc tổng thể}{6}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Biểu diễn đầu vào}{6}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Patching}{6}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Patch Embedding}{7}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Positional Embedding}{7}{subsection.3.5}%
+\contentsline {subsection}{\numberline {3.6}Transformer Encoder}{7}{subsection.3.6}%
+\contentsline {subsection}{\numberline {3.7}Classification Head}{8}{subsection.3.7}%
+\contentsline {section}{\numberline {4}Cài đặt thực nghiệm của tác giả}{9}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Thí nghiệm trên AudioSet}{9}{subsection.4.1}%
+\contentsline {subsubsection}{\numberline {4.1.1}Bộ dữ liệu AudioSet}{9}{subsubsection.4.1.1}%
+\contentsline {subsubsection}{\numberline {4.1.2}Thiết lập thử nghiệm}{9}{subsubsection.4.1.2}%
+\contentsline {paragraph}{Cấu hình huấn luyện chung.}{9}{section*.4}%
+\contentsline {paragraph}{Lịch huấn luyện cho từng thiết lập.}{10}{section*.5}%
+\contentsline {subsubsection}{\numberline {4.1.3}Kết quả thí nghiệm}{10}{subsubsection.4.1.3}%
+\contentsline {subsubsection}{\numberline {4.1.4}Ảnh hưởng của ImageNet pretraining}{11}{subsubsection.4.1.4}%
+\contentsline {subsubsection}{\numberline {4.1.5}Ảnh hưởng của Positional Embedding Adaptation}{11}{subsubsection.4.1.5}%
+\contentsline {subsubsection}{\numberline {4.1.6}Ảnh hưởng của Patch Split Overlap}{12}{subsubsection.4.1.6}%
+\contentsline {subsubsection}{\numberline {4.1.7}Ảnh hưởng của hình dạng và kích thước Patch}{12}{subsubsection.4.1.7}%
+\contentsline {subsection}{\numberline {4.2}Thí nghiệm trên ESC-50}{12}{subsection.4.2}%
+\contentsline {subsubsection}{\numberline {4.2.1}Bộ dữ liệu ESC-50}{12}{subsubsection.4.2.1}%
+\contentsline {subsubsection}{\numberline {4.2.2}Thiết lập thí nghiệm cho ESC-50}{12}{subsubsection.4.2.2}%
+\contentsline {subsubsection}{\numberline {4.2.3}Kết quả thí nghiệm}{13}{subsubsection.4.2.3}%
+\contentsline {subsection}{\numberline {4.3}Thí nghiệm trên SpeechCommands}{13}{subsection.4.3}%
+\contentsline {subsubsection}{\numberline {4.3.1}Bộ dữ liệu SpeechCommands}{13}{subsubsection.4.3.1}%
+\contentsline {subsubsection}{\numberline {4.3.2}Thiết lập thử nghiệm}{13}{subsubsection.4.3.2}%
+\contentsline {subsubsection}{\numberline {4.3.3}Kết quả thí nghiệm}{14}{subsubsection.4.3.3}%
+\contentsline {subsection}{\numberline {4.4}Nhận xét chung}{14}{subsection.4.4}%
+\contentsline {section}{\numberline {5}Cài đặt thực nghiệm của nhóm}{15}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Dataset}{15}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Kế hoạch thực nghiệm}{15}{subsection.5.2}%
+\contentsline {section}{\numberline {6}Tài liệu tham khảo}{17}{section.6}%
