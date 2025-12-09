@@ -137,3 +137,28 @@ Tính giá trị trung bình (Mean) và độ lệch chuẩn (Standard Deviation
 ### 5.3. Lưu Checkpoint
 
 Lưu lại trọng số của mô hình có kết quả tốt nhất (Best Model) vào Google Drive để sử dụng sau này cho việc demo hoặc inference.
+
+### 5.4. So sánh với tác giả
+
+#### Chiến lược 1: So sánh hiệu quả của Pre-training (Ablation Study Consistency)
+
+-   **Cơ sở từ bài báo**: Tác giả đã chứng minh rằng trên các tập dữ liệu nhỏ (như ESC-50), việc sử dụng pre-training từ AudioSet (AST-P) sẽ tốt hơn chỉ dùng ImageNet (AST-S). Kết quả tác giả (ESC-50) là AST-S (88.7%) < AST-P (95.6%).
+-   **Tự thực nghiệm**: US8K cũng là tập dữ liệu nhỏ và thuộc miền âm thanh môi trường, rất giống ESC-50. Chạy 2 phiên bản thực nghiệm:
+    -   Model 1: Load weights chỉ pre-trained trên ImageNet (DeiT)
+    -   Model 2: Load weights pre-trained thêm trên AudioSet.
+
+#### Chiến lược 2: So sánh vị thế so với SOTA
+
+-   **Cơ sở từ bài báo**: Tác giả so sánh AST với các mô hình SOTA (State-of-the-art) cũ dùng CNN trên ESC-50 và SpeechCommands, và thấy AST vượt trội hơn.
+-   **Tự thực nghiệm**: Tìm kiếm kết quả SOTA hiện tại (hoặc các baseline phổ biến) của UrbanSound8K (thường là các mạng CNN như VGGish, ResNet-18, hoặc CRNN). Chạy AST rồi so sánh.
+
+#### Chiến lược 3: So sánh tương quan miền (Domain Correlation) ới ESC-50
+
+-   **Cơ sở từ bài báo**: Tác giả đạt 95.6% trên ESC-50.
+-   **Tự thực nghiệm**:
+    -   Nếu kết quả trên US8K rất cao thì nó tương đồng với mức hiệu năng cao trên ESC-50.
+    -   So sánh Learning Curve (Đường cong học tập): Vẽ biểu đồ Loss/Accuracy qua từng Epoch và so sánh với ESC-50.
+
+#### Chiến lược 4: So sánh độ ổn định (Standard Deviation)
+
+-   **Tự thực nghiệm**: Chạy 10-Fold CV trên US8K. Tính độ lệch chuẩn rồi so sánh với tác giả.
