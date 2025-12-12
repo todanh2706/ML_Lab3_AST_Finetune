@@ -1,2 +1,59 @@
 \pagebreak
-\section{Cài đặt thử nghiệm}
+\section{Cài đăt thử nghiệm của tác giả \cite{YuanGongND}}
+Để đánh giá hiệu quả của mô hình Audio Spectrogram Transformer (AST), tác giả thiết lập quy trình huấn luyện và kiểm thử với các cấu hình chi tiết như sau.
+\subsection{Môi trường tối ưu hoá và huấn luyện}
+Mô hình được huấn luyện theo phương pháp học giám sát (supervised learning) sử dụng thuật toán tối ưu hóa Adam. Các tham số của bộ tối ưu hóa được thiết lập như sau:
+\begin{itemize}
+    \item \textbf{Trọng số suy giảm (Weight decay):} $5 \times 10^{-7}$.
+    \item \textbf{Các hệ số Beta:} $\beta_1 = 0.95$, $\beta_2 = 0.999$.
+\end{itemize}
+Chiến lược khởi tạo trọng số (Initialization) tận dụng mô hình đã được pre-trained trên ImageNet (đối với tất cả các tập dữ liệu) để tăng cường khả năng trích xuất đặc trưng và hội tụ nhanh hơn.
+\subsection{Xử lý dữ liệu và tăng cường (Augmentation)}
+Dữ liệu đầu vào là Log-Mel Spectrogram được chuẩn hóa (Normalization) bằng cách trừ đi giá trị trung bình (Mean) và chia cho độ lệch chuẩn (Std) của toàn bộ tập dữ liệu.\\
+Để giảm thiểu hiện tượng quá khớp (overfitting), tác giả áp dụng các kỹ thuật tăng cường dữ liệu mạnh mẽ ngay trong quá trình tải dữ liệu (online augmentation):
+\begin{itemize}
+    \item \textbf{SpecAugment:} Áp dụng mặt nạ tần số (Frequency Masking) và mặt nạ thời gian (Time Masking) với kích thước tối đa tùy thuộc vào từng tập dữ liệu.
+    \item \textbf{Mixup:} Trộn lẫn hai mẫu dữ liệu ngẫu nhiên với hệ số $\lambda$ được lấy mẫu từ phân phối Beta hoặc Uniform, giúp mô hình học được các đặc trưng lai giữa các lớp.
+    \item \textbf{Noise Augmentation:} Thêm nhiễu ngẫu nhiên vào spectrogram (chỉ áp dụng cho tập SpeechCommands).
+\end{itemize}
+\subsection{Cấu hình chi tiết cho từng bộ dữ liệu}
+Các siêu tham số (Hyperparameters) cụ thể cho từng bài toán thực nghiệm được thiết lập dựa trên các kịch bản chuẩn (\texttt{run.sh}, \texttt{run\_sc.sh}, \texttt{run\_esc.sh}) như bảng dưới đây:
+\begin{table}[H]
+\begin{tabular}{|p{4cm}|p{4cm}|p{4cm}|p{4cm}|}
+    \hline
+    \textbf{Tham số} & \textbf{AudioSet (Full)} & \textbf{SpeechCommands (v2)} & \textbf{ESC-50} \\
+    \hline
+    \textbf{Kích thước đầu vào} & 1024 frames ($\sim$10s) & 128 frames ($\sim$1s) & 512 frames ($\sim$5s) \\
+    \hline
+    \textbf{Batch Size} & 12 & 128 & 48 \\
+    \hline
+    \textbf{Learning Rate (LR)} & $1 \times 10^{-5}$ & $2.5 \times 10^{-4}$ & $1 \times 10^{-5}$ \\
+    \hline
+    \textbf{Số Epochs} & 5 & 30 & 25 \\
+    \hline 
+    \textbf{LR Scheduler} & MultiStepLR (Giảm 0.5 mỗi epoch từ epoch 2) & MultiStepLR (Giảm 0.85 mỗi epoch từ epoch 5) & MultiStepLR (Giảm 0.85 mỗi epoch từ epoch 5) \\
+    \hline
+    \textbf{Warmup} & Có & Không & Không \\
+    \hline
+    \textbf{SpecAugment} & Freq Mask: 48, Time Mask: 192 & Freq Mask: 48, Time Mask: 48 & Freq Mask: 24, Time Mask: 96 \\
+    \hline
+    \textbf{Mixup ($\alpha$)} & 0.5 & 0.6 & 0 \\
+    \hline
+    \textbf{Hàm mất mát} & BCEWithLogitsLoss & BCEWithLogitsLoss & CrossEntropyLoss \\
+    \hline
+    \textbf{Độ đo chính} & mAP & Accuracy & Accuracy \\
+    \hline
+\end{tabular}
+\caption{Bảng tham số thực nghiệm cho các bộ dữ liệu AudioSet, SpeechCommands và ESC-50}
+\label{label:comp_table}
+\end{table}
+\paragraph{Lưu ý đặc biệt cho AudioSet:}
+Đối với tập dữ liệu AudioSet (cấu hình Full), tác giả sử dụng kỹ thuật \textbf{Weight Averaging} (trung bình trọng số mô hình) từ epoch 1 dến epoch 5 để tạo ra mô hình cuối cùng ổn định hơn.
+
+\paragraph{Thông số chuẩn hoá:}
+Các giá trị trung bình, độ lệch chuẩn được sử dụng cho chuẩn hoá đầu vào:
+\begin{itemize}
+    \item AudioSet: Mean - $4.268$, Std $4.569$.
+    \item SpeechCommands: Mean - $6.846$, Std $5.565$.
+    \item ESC-50: Mean - $6.627$, Std $5.358$.
+\end{itemize}

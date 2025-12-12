@@ -1,2 +1,100 @@
 \pagebreak
 \section{Cài đặt mô hình}
+
+Mô hình Audio Spectrogram Transformer (AST) được xây dựng dựa trên nền tảng kiến trúc DeiT (Data-efficient Image Transformers) để tận dụng các trọng số pre-trained hiệu quả từ ImageNet. Chi tiết cài đặt như sau: \cite{gong2021ast}
+
+\paragraph{Đầu vào và tiền xử lý:}
+\begin{itemize}
+    \item \textbf{Đặc trưng:} Tín hiệu âm thanh (waveform) được chuyển đổi thành log-Mel spectrogram 128 chiều.
+    \item \textbf{Tham số STFT:} Cửa sổ Hamming 25\,ms, bước trượt 10\,ms; chuẩn hoá đặc trưng trước khi đưa vào mạng.
+    \item \textbf{Kích thước:} Với đoạn âm thanh dài $t$ giây, số khung thời gian xấp xỉ $100t$, tạo ra spectrogram kích thước $128 \times 100t$.
+\end{itemize}
+
+\paragraph{Phân mảnh (Patching):}
+\begin{itemize}
+    \item Spectrogram được chia thành các patch kích thước $16\times16$.
+    \item Áp dụng cơ chế chồng lấn (overlap) với stride $= 10$ trên cả hai trục thời gian và tần số (tương đương vùng chồng lấn 6 đơn vị).
+    \item Số patch theo trục tần số cố định là $12$; theo trục thời gian là $\left\lfloor \frac{100t-16}{10} \right\rfloor + 1$.
+    \item Tổng số patch:
+    \[
+        N \;=\; 12 \times \left( \left\lfloor \frac{100t-16}{10} \right\rfloor + 1 \right).
+    \]
+\end{itemize}
+
+\paragraph{Kiến trúc Transformer và Token đặc biệt:}
+Mô hình sử dụng backbone là ViT (biến thể DeiT-Base) với cấu hình: embedding $d=768$, 12 lớp encoder, 12 đầu attention.
+\begin{itemize}
+    \item \textbf{Token đặc biệt:} Do sử dụng kiến trúc DeiT, chuỗi đầu vào được bổ sung hai token đặc biệt ở đầu: Token phân loại (\texttt{[CLS]}) và Token chưng cất (\texttt{[DIST]}).
+    \item \textbf{Chuỗi đưa vào Encoder:}
+    \[
+        Input = [\texttt{CLS}, \texttt{DIST}, Patch_1, Patch_2, \dots, Patch_N] + PosEmbed
+    \]
+    \item \textbf{Mã hóa vị trí:} Sử dụng positional embedding có thể học được. Trong code gốc, vector này được nội suy (interpolate) động để phù hợp với chiều dài thay đổi của âm thanh đầu vào.
+\end{itemize}
+
+\paragraph{Đầu ra và huấn luyện:}
+\begin{itemize}
+    \item Lấy vector của [CLS] làm biểu diễn và đưa qua đầu phân loại tuyến tính.
+    \item Bài toán gốc (AudioSet): đa nhãn, sử dụng sigmoid ở đầu ra và Binary Cross-Entropy (BCE) làm hàm mất mát.
+    \item Pretrain: Khởi tạo từ ViT đã được pretrain trên ImageNet hoặc Imagenet + AudioSet; sau đó fine-tune trên tập target.
+\end{itemize}
+
+\paragraph{Đầu ra và huấn luyện:}
+\begin{itemize}
+    \item \textbf{Biểu diễn đầu ra (Pooling):} Đặc trưng cuối cùng của đoạn âm thanh không chỉ dùng token \texttt{[CLS]} mà là trung bình cộng của token \texttt{[CLS]} và \texttt{[DIST]}:
+    \[
+        h_{final} = \frac{h_{[CLS]} + h_{[DIST]}}{2}
+    \]
+    \item \textbf{Lớp phân loại:} Vector $h_{final}$ được chuẩn hóa (LayerNorm) trước khi đưa qua lớp tuyến tính (Linear Head) để dự đoán nhãn.
+    \item \textbf{Hàm mất mát:} Sử dụng Binary Cross-Entropy (BCE) cho bài toán đa nhãn (AudioSet).
+\end{itemize}
+
+% \subsection{Cài đặt mô hình để huấn luyện trên UrbanSound8K trên Kaggle}
+% \label{subsec:ast-us8k-kaggle}
+
+% Mục tiêu: fine-tune AST trên UrbanSound8K với đầu ra 10 lớp, dùng đặc trưng log-Mel 128 chiều, chiều thời gian cố định 1024 khung, và thực hiện đánh giá 10-fold.
+
+% Sử dụng notebook Kaggle với GPU T4 x 2. Cài các thư viện timm==0.4.5, wget, librosa giống như tác giả. Clone code AST của tác giả vào Kaggle và import lớp ASTModel
+
+
+% \paragraph{Tiền xử lý âm thanh}
+% \begin{itemize}
+%   \item Đọc waveform, trộn kênh về mono.
+%   \item Resample về 16 kHz; cắt hoặc thêm buffer về đúng 10 giây.
+%   \item Tạo log-Mel FBank theo torchaudio.compliance.kaldi.fbank với num\_mel\_bins=128, frame\_shift=10 ms, window hanning.
+%   \item Chuẩn hoá theo công thức (x - mean) / (2*std) với mean=-4.2677393, std=4.5689974.
+%   \item Cắt/buffer chiều thời gian về target\_length=1024. Đầu ra có dạng (1024, 128).
+%   \item Lớp UrbanSoundDataset đọc metadata, lọc theo danh sách fold, ánh xạ tới đường dẫn file wav và trả về cặp (fbank, label). Tạo DataLoader cho train/test với batch\_size=8, num\_workers=4, pin\_memory=True, shuffle=True cho tập huấn luyện.
+% \end{itemize}
+
+% \paragraph{Tạo mô hình AST và thay đầu ra 10 lớp}
+% \begin{itemize}
+%   \item Tải checkpoint pretrain Imagenet hoặc Imagenet + AudioSet.
+%   \item Khởi tạo ASTModel với label\_dim=527, input\_tdim=1024, input\_fdim=128, fstride=tstride=10, model\_size=base384, không bật imagenet\_pretrain và audioset\_pretrain.
+%   \item Bọc bằng torch.nn.DataParallel để khớp tên tham số trong state\_dict của checkpoint (dùng tiền tố module.).
+%   \item Nạp state\_dict từ checkpoint đã tải ở trên.
+%   \item Thay lớp cuối của mlp\_head từ Linear(768, 527) thành Linear(768, 10).
+% \end{itemize}
+
+% % \paragraph{Huấn luyện và đánh giá.}
+% % \begin{itemize}
+% %   \item Hàm train\_one\_epoch và eval\_one\_epoch dùng autocast và GradScaler cho mixed precision.
+% %   \item Mất mát: CrossEntropyLoss. Tối ưu: AdamW với learning\_rate=1e-5.
+% %   \item Mỗi epoch tính loss và accuracy trên train/test. Lưu lại state\_dict tốt nhất theo độ chính xác test.
+% % \end{itemize}
+
+% \paragraph{Train với 10-fold cross-validation.}
+% \begin{itemize}
+%   \item Theo hướng dẫn của tác giả bộ data, loop qua 10 fold, mỗi loop lấy 1 fold làm tập test, các fold còn lại làm tập train.
+%   \item Mỗi fold huấn luyện num\_epochs=3, batch\_size=8.
+%   \item Sau khi kết thúc mỗi fold, ghi checkpoint tốt nhất vào /kaggle/working/ast\_us8k\_checkpoints/ast\_us8k\_fold{fold}.pth.
+%   \item Sau 10 fold, tính trung bình và độ lệch chuẩn của accuracy: mean ± std.
+% \end{itemize}
+
+% % \paragraph{Kích thước đầu vào và số patch tương ứng với AST.}
+% % Đặc trưng đầu vào có kích thước 128 (tần số) × 1024 (thời gian). Với patch 16×16, stride 10×10, số patch theo trục tần số là 12; theo trục thời gian là \(\left\lfloor \frac{1024-16}{10} \right\rfloor + 1 = 101\). Tổng số patch là \(12 \times 101 = 1212\). Chuỗi đầu vào Transformer có chiều dài 1213 khi thêm token [CLS].
+
+% \paragraph{Lưu ý khi chạy}
+% Vì thư viện timm bản 4.1.5 của tác giả khá là cũ nên khi cài đặt, Kaggle phải down version khá nhiều thư viện liên quan khác, dẫn đến lỗi kernel bị restart khi chạy ở lần đầu tiên, chạy lại lần 2 thì model sẽ train bình thường.
+
+% Do đó, với code này model phải được train bằng cách chạy trực tiếp trên Kaggle thay vì save and run. 

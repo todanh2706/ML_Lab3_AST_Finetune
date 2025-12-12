@@ -1,2 +1,97 @@
 \pagebreak
-\section{Đánh giá và phân tích kết quả}
+\section{Thử nghiệm của nhóm}
+
+\subsection{Môi trường thực nghiệm}
+
+Các thí nghiệm được triển khai trong môi trường notebook trực tuyến có hỗ trợ GPU với nền tảng CUDA
+(Kaggle Notebook). Mô hình được hiện thực bằng thư viện PyTorch (phiên bản 2.x),
+kết hợp cùng các thư viện torchaudio, timm, librosa và scikit-learn để xử lý tín hiệu
+và xây dựng pipeline huấn luyện. Các phép tính trên GPU được tăng tốc bằng cơ chế
+mixed precision training thông qua mô-đun torch.amp.autocast và GradScaler, giúp
+giảm dung lượng bộ nhớ và rút ngắn thời gian huấn luyện.
+
+Dữ liệu UrbanSound8K được mount sẵn tại thư mục /kaggle/input và toàn bộ
+mã nguồn, checkpoint của mô hình được lưu tại /kaggle/working.
+
+\subsection{Tiền xử lý tín hiệu âm thanh}
+
+Mọi đoạn âm thanh trong UrbanSound8K đều được chuyển về dạng log Mel filterbank
+(fbank) trước khi đưa vào mô hình Audio Spectrogram Transformer (AST). Quy trình
+tiền xử lý gồm các bước:
+
+\begin{itemize}
+    \item Tải tín hiệu âm thanh bằng torchaudio với dạng tensor (channels, time).
+    \item Nếu tín hiệu có nhiều kênh (stereo), chuyển về mono bằng cách lấy trung bình
+    trên trục kênh.
+    \item Chuẩn hóa tần số lấy mẫu về 16 kHz bằng phép nội suy lại (resampling).
+    \item Cắt hoặc pad tín hiệu về đúng 10 giây, tương ứng với một số mẫu cố định.
+    \item Trích xuất đặc trưng log Mel filterbank với 128 băng tần Mel, window 25 ms,
+    bước trượt 10 ms, thu được khoảng 1024 khung thời gian.
+    \item Nếu số khung thời gian nhỏ hơn 1024 thì pad thêm khung 0; nếu lớn hơn thì
+    cắt bớt cho vừa 1024 khung.
+    \item Chuẩn hóa đặc trưng theo công thức
+    \((x - \mu) / (2 \sigma)\) với \(\mu = -4.2677\) và \(\sigma = 4.5690\),
+    nhằm đưa về miền giá trị phù hợp với mô hình AST gốc.
+\end{itemize}
+
+Kết quả mỗi đoạn âm thanh là một tensor kích thước (T, F) = (1024, 128), sau đó
+được đưa vào mô hình dưới dạng batch.
+
+\subsection{Cấu hình mô hình Audio Spectrogram Transformer}
+
+Trong tất cả các thí nghiệm, nhóm sử dụng cùng một kiến trúc Audio Spectrogram
+Transformer (AST) với cấu hình base384, stride thời gian và tần số đều bằng 10.
+Với đầu vào 128 băng tần Mel và 1024 khung thời gian, mô hình tạo ra 1212 patch
+spectrogram. Phần đầu ra của backbone là một vector đặc trưng có chiều 768, sau đó
+được đưa qua một lớp phân loại tuyến tính (mlp head) ánh xạ về 10 lớp
+tương ứng với 10 loại âm thanh của UrbanSound8K.
+
+Trên cơ sở kiến trúc chung này, nhóm xây dựng hai cấu hình tiền huấn luyện khác nhau:
+
+\subsubsection{Cấu hình AST-S (AST-ImageNet)}
+
+Trong kịch bản thứ nhất, mô hình AST được khởi tạo từ các trọng số đã được huấn luyện
+trước trên ImageNet thông qua tham số imagenet\_pretrain = True và audioset\_pretrain = False trong hàm khởi tạo ASTModel. Toàn bộ backbone vì vậy kế thừa khả năng trích xuất đặc trưng từ ảnh (được ánh xạ sang miền spectrogram), nhưng không sử dụng thêm bất kì checkpoint nào từ AudioSet.\\
+Lớp phân loại gốc của AST (với 527 nút đầu ra) được thay thế bằng một lớp tuyến tính mới có 10 nút, khởi tạo ngẫu nhiên, để phù hợp với bài toán phân loại 10 lớp trên UrbanSound8K. Cấu hình này được ký hiệu là AST-S.
+
+\subsubsection{Cấu hình AST-P (AST-ImageNet, AudioSet)}
+
+Trong kịch bản thứ hai, mô hình AST được khởi tạo sao cho tương thích với checkpoint đã fine-tune trên AudioSet (audioset\_0.4593.pth). Cụ thể, mô hình được tạo với label\_dim = 527, input\_tdim = 1024, input\_fdim = 128, và cả hai tham số imagenet\_pretrain, audioset\_pretrain đều đặt False để nhóm chủ động nạp trọng số từ checkpoint AudioSet bên ngoài.
+
+Sau khi tải file trọng số audioset\_0.4593.pth, toàn bộ state\_dict được nạp vào mô hình, giúp backbone kế thừa trực tiếp khả năng phân biệt âm thanh từ tập AudioSet. Tương tự như cấu hình trước, lớp phân loại 527 chiều được thay bằng một lớp tuyến tính 10 chiều, khởi tạo ngẫu nhiên cho UrbanSound8K. Cấu hình này được ký hiệu là AST-P.\\
+Hai cấu hình trên sử dụng chung toàn bộ pipeline tiền xử lý, kiến trúc backbone, hàm mất mát, optimizer và chiến lược huấn luyện; điểm khác biệt duy nhất nằm ở nguồn trọng số tiền huấn luyện được sử dụng cho backbone.
+
+\subsection{Chiến lược huấn luyện và đánh giá}
+
+Để đánh giá mô hình một cách công bằng, nhóm áp dụng chiến lược 10-fold cross-validation theo đúng cách chia fold có sẵn trong UrbanSound8K:
+
+\begin{itemize}
+    \item Ở mỗi vòng lặp, chọn một fold (từ 1 đến 10) làm tập kiểm thử.
+    \item Chín fold còn lại được gộp lại tạo thành tập huấn luyện.
+    \item Tuyệt đối không trộn mẫu giữa các fold, đảm bảo không xảy ra rò rỉ dữ liệu.
+\end{itemize}
+
+Với mỗi cấu hình mô hình (AST-S và AST-P), nhóm sử dụng cùng một bộ
+siêu tham số:
+
+\begin{itemize}
+    \item Hàm mất mát: Cross-entropy cho bài toán phân loại đơn nhãn.
+    \item Optimizer: AdamW với learning rate cố định là \(1 \times 10^{-5}\).
+    \item Kích thước batch: 8 (được lựa chọn để phù hợp với dung lượng bộ nhớ GPU).
+    \item Số epoch: từ 3 đến 5 epoch cho mỗi fold, tùy theo giới hạn tính toán; trong cả hai
+    cấu hình, mô hình hội tụ khá nhanh nhờ sử dụng trọng số tiền huấn luyện.
+    \item Huấn luyện sử dụng mixed precision (autocast và GradScaler) để giảm chi phí tính toán.
+\end{itemize}
+
+Sau mỗi epoch, mô hình được đánh giá trên tập kiểm thử của fold tương ứng. Nhóm
+lưu lại checkpoint có độ chính xác cao nhất trên tập kiểm thử (best test accuracy) cho mỗi fold. Các checkpoint này được ghi vào thư mục ast\_us8k\_checkpoints.\\
+Cuối cùng, để tổng hợp kết quả, nhóm tính toán độ chính xác trung bình và độ lệch chuẩn trên toàn bộ 10 fold, theo công thức:
+
+\[
+\text{Mean Accuracy} = \frac{1}{10} \sum_{k=1}^{10} \text{Acc}_k,
+\quad
+\text{Std} = \sqrt{ \frac{1}{10} \sum_{k=1}^{10} (\text{Acc}_k - \text{Mean Accuracy})^2 }.
+\]
+
+Việc sử dụng cùng một thiết lập huấn luyện và cùng chiến lược cross-validation cho cả AST-S và AST-P giúp việc so sánh trực tiếp tác động của tiền huấn luyện
+trên AudioSet đối với hiệu năng phân loại âm thanh môi trường trên UrbanSound8K.

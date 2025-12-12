@@ -1,2 +1,17 @@
 \pagebreak
 \section{Mô tả tập dữ liệu}
+
+Trong nghiên cứu này, nhóm sử dụng tập dữ liệu UrbanSound8K, một bộ dữ liệu âm thanh môi trường đô thị được xây dựng để phục vụ các bài toán phân loại các đoạn âm thanh ngắn trong đời sống hằng ngày. UrbanSound8K bao gồm 8.732 đoạn âm thanh (audio clips) đã được gán nhãn, với thời lượng không quá 4 giây cho mỗi đoạn. Các đoạn âm thanh này được trích xuất từ các bản ghi dài hơn và được chú thích cẩn thận.
+
+Toàn bộ dữ liệu được chia thành 10 fold (fold1 đến fold10), tuân theo chiến lược 10-fold cross-validation được đề xuất sẵn bởi tác giả bộ dữ liệu. Cách chia này được thiết kế nhằm đảm bảo người dùng có thể đánh giá mô hình một cách công bằng và nhất quán, đồng thời hạn chế hiện tượng data leakage (rò rỉ dữ liệu giữa tập huấn luyện và tập kiểm thử). Trong mỗi fold, các đoạn âm thanh thuộc nhiều lớp khác nhau được phân bố một cách tương đối cân bằng.
+
+UrbanSound8K được gán nhãn theo 10 loại âm thanh (10 classes) thường gặp trong môi trường đô thị, ví dụ như tiếng ô tô (car horn), tiếng chó sủa (dog bark), tiếng khoan (drilling), tiếng còi cứu hỏa (siren), tiếng máy nổ (engine idling), v.v. Mỗi bản ghi được mô tả bởi các thông tin meta kèm theo như: tên file, fold, mã lớp (class ID) và tên lớp (class name). Các thông tin này được lưu trong file metadata UrbanSound8K.csv, giúp việc truy vấn, lọc và xây dựng tập train/test trở nên thuận tiện.
+
+Về mặt tổ chức thư mục, UrbanSound8K được cấu trúc như sau:
+\begin{itemize}
+    \item Thư mục audio/ chứa 10 thư mục con: fold1/, fold2/, \dots, fold10/.
+    \item Mỗi thư mục foldX/ chứa các file âm thanh định dạng .wav tương ứng với fold đó.
+    \item Thư mục metadata/ chứa file UrbanSound8K.csv, trong đó mỗi dòng tương ứng với một đoạn âm thanh kèm nhãn và thông tin mô tả.
+\end{itemize}
+
+Tập dữ liệu UrbanSound8K có dung lượng khoảng 6 GB, bao gồm cả các file âm thanh và metadata. Với quy mô vừa phải nhưng đa dạng về loại âm thanh và điều kiện thu, UrbanSound8K là lựa chọn phù hợp cho các thí nghiệm \textit{fine-tuning} mô hình Audio Spectrogram Transformer (AST) trong bối cảnh phân loại âm thanh môi trường. Đồng thời, đây cũng là một bộ dữ liệu phổ biến trong cộng đồng, cho phép so sánh kết quả với nhiều mô hình khác (CNN, CRNN, hay các mô hình transformer khác) đã được công bố trước đó.

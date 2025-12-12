@@ -1,2 +1,152 @@
 \pagebreak
-\section{Thử nghiệm của nhóm}
+\section{Đánh giá và phân tích kết quả}
+
+\subsection{Kết quả định lượng trên UrbanSound8K}
+
+Sau khi huấn luyện và lưu checkpoint cho từng fold, nhóm tiến hành đánh giá lại
+toàn bộ 10 mô hình trên tập kiểm thử tương ứng của mỗi fold. Quá trình đánh giá được
+thực hiện riêng cho hai cấu hình:
+
+\begin{itemize}
+    \item AST-P: backbone khởi tạo từ checkpoint đã fine-tune trên AudioSet,
+    sau đó thay đầu ra 10 lớp và fine-tune trên UrbanSound8K.
+    \item AST-S: backbone khởi tạo từ mô hình tiền huấn luyện trên ImageNet,
+    chỉ fine-tune trực tiếp trên UrbanSound8K, không sử dụng checkpoint AudioSet.
+\end{itemize}
+
+Bảng dưới đây tóm tắt kết quả trung bình trên 10 fold:
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{lccc}
+        \hline
+        Cấu hình mô hình & Mean accuracy (\%) & Std (\%) & Micro accuracy (\%) \\
+        \hline
+        AST-S  & 79.75 & 3.76 & 79.70 \\
+        AST-P  & 86.31 & 4.20 & 86.27 \\
+        \hline
+    \end{tabular}
+    \caption{Kết quả 10-fold cross-validation trên UrbanSound8K cho hai cấu hình AST.}
+    \label{tab:us8k_results}
+\end{table}
+
+Đối với cấu hình AST-P, độ chính xác trên từng fold dao động từ khoảng
+76.86\% (fold khó nhất) đến 92.12\% (fold tốt nhất), với giá trị trung bình
+86.31\% và độ lệch chuẩn 4.20\%. Micro accuracy tính trực tiếp từ confusion matrix
+tổng hợp trên toàn bộ dữ liệu là 86.27\%, gần trùng với giá trị trung bình theo fold,
+cho thấy việc chia fold và tổng hợp là nhất quán.
+
+Trong khi đó, cấu hình AST-S đạt độ chính xác trung bình 79.75\% với độ lệch
+chuẩn 3.76\%. Các fold dao động trong khoảng từ 72.65\% đến 84.19\%, micro accuracy
+tính từ confusion matrix tổng là 79.70\%. Như vậy, so với AST-S, mô hình
+AST-P cải thiện khoảng 6.5 điểm phần trăm về độ chính xác trung bình trên
+UrbanSound8K.
+
+\subsection{Phân tích confusion matrix}
+
+Để quan sát chi tiết hơn cách mô hình nhầm lẫn giữa các lớp, nhóm tổng hợp
+confusion matrix trên toàn bộ 10 fold cho từng cấu hình. Thứ tự các lớp trong
+bảng là:
+air\_conditioner, car\_horn, children\_playing, dog\_bark,
+drilling, engine\_idling, gun\_shot, jackhammer, siren, street\_music.
+
+\begin{table}[h]
+    \centering
+    \scriptsize
+    \setlength{\tabcolsep}{3pt}
+    \begin{tabular}{lrrrrrrrrrr}
+        \hline
+        Thật \textbackslash\ Dự đoán
+        & air\_cond. & car\_horn & child\_play & dog\_bark
+        & drilling & eng\_idle & gun\_shot & jackhammer & siren & street\_music \\
+        \hline
+        air\_cond.    & 744 &   0 &  26 &  29 &  86 &  46 &   0 &   9 &  11 &  49 \\
+        car\_horn     &   0 & 399 &   3 &   2 &   1 &   1 &   0 &  13 &   0 &  10 \\
+        child\_play   &   2 &   0 & 951 &   6 &  11 &   0 &   0 &   0 &   6 &  24 \\
+        dog\_bark     &  18 &   2 &   9 & 958 &   3 &   0 &   0 &   0 &   5 &   5 \\
+        drilling      &  27 &  11 &   8 &   4 & 856 &  14 &   0 &  58 &   4 &  18 \\
+        eng\_idle     & 102 &   3 &   5 &   0 &  40 & 715 &   0 & 118 &   4 &  13 \\
+        gun\_shot     &   0 &   0 &   0 &   4 &   1 &   0 & 368 &   1 &   0 &   0 \\
+        jackhammer    &  22 &   0 &   1 &   0 & 171 &  10 &   0 & 782 &   0 &  14 \\
+        siren         &  12 &  11 &   5 &  43 &   1 &   0 &   0 &   1 & 849 &   7 \\
+        street\_music &   9 &   3 &  52 &   3 &   8 &   4 &   0 &   5 &   5 & 911 \\
+        \hline
+    \end{tabular}
+    \caption{Confusion matrix tổng hợp của cấu hình AST-P trên UrbanSound8K.}
+    \label{tab:cm_astp}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \scriptsize
+    \setlength{\tabcolsep}{3pt}
+    \begin{tabular}{lrrrrrrrrrr}
+        \hline
+        Thật \textbackslash\ Dự đoán
+        & air\_cond. & car\_horn & child\_play & dog\_bark
+        & drilling & eng\_idle & gun\_shot & jackhammer & siren & street\_music \\
+        \hline
+        air\_cond.    & 556 &   2 &  33 &  97 &  77 &  78 &   0 &  33 &  38 &  86 \\
+        car\_horn     &   1 & 392 &   2 &   0 &   7 &   0 &   0 &  10 &   0 &  17 \\
+        child\_play   &   8 &   0 & 879 &  48 &   6 &   3 &   0 &   1 &   6 &  49 \\
+        dog\_bark     &  10 &   2 &  31 & 923 &   8 &   6 &   3 &   0 &   7 &  10 \\
+        drilling      &  36 &  16 &  12 &  18 & 774 &  20 &   2 &  70 &  28 &  24 \\
+        eng\_idle     & 114 &   1 &  17 &  10 &  14 & 680 &   2 & 121 &  28 &  13 \\
+        gun\_shot     &   0 &   0 &   0 &   5 &   0 &   0 & 369 &   0 &   0 &   0 \\
+        jackhammer    &  55 &   3 &   4 &   0 & 182 &  53 &   4 & 688 &   0 &  11 \\
+        siren         &   9 &   3 &  25 &  20 &  32 &   4 &   0 &   0 & 811 &  25 \\
+        street\_music &  20 &  13 &  42 &  13 &   6 &   7 &   0 &   5 &   7 & 887 \\
+        \hline
+    \end{tabular}
+    \caption{Confusion matrix tổng hợp của cấu hình AST-S trên UrbanSound8K.}
+    \label{tab:cm_asts}
+\end{table}
+
+Từ hai confusion matrix trong Bảng~\ref{tab:cm_astp} và Bảng~\ref{tab:cm_asts},
+nhóm rút ra một số nhận xét định tính về hành vi của mô hình.
+
+\paragraph{Các lớp dễ phân biệt.}
+Các lớp có tính chất âm thanh rõ ràng, mang tính sự kiện ngắn và đặc trưng như
+gun\_shot, car\_horn, dog\_bark, children\_playing thường đạt độ chính xác rất cao
+ở cả hai cấu hình. Ví dụ, lớp gun\_shot hầu như luôn được dự đoán đúng, số lượng
+mẫu bị nhầm sang lớp khác là rất ít. Điều này phù hợp với trực giác khi đây là những
+âm thanh có biên dạng thời gian và phổ tần tương đối đặc trưng.
+
+\paragraph{Các lớp khó, dễ gây nhầm lẫn.}
+Những lớp mang tính nền tiếng ồn đô thị và tiếng máy móc như air\_conditioner,
+engine\_idling, drilling, jackhammer và siren có xu hướng bị nhầm lẫn lẫn nhau.
+Trong confusion matrix của cả hai cấu hình, các hàng tương ứng với các lớp này
+có số lượng mẫu bị dự đoán sang nhau khá lớn. Điều này phản ánh việc đặc trưng
+log-Mel của các loại tiếng ồn công nghiệp có phổ tần chồng lấn và hình thái
+thời gian tương đối giống nhau.
+
+So sánh hai confusion matrix cho thấy khi sử dụng pretraining AudioSet, số lượng
+nhầm lẫn giữa một số cặp lớp giảm xuống, đặc biệt là đối với các lớp có tính chất
+âm thanh gần với các nhãn trong AudioSet. Điều này gợi ý rằng kiến thức học được
+từ AudioSet giúp backbone AST phân tách tốt hơn các kiểu tiếng ồn phức tạp,
+dù vẫn còn một mức độ nhầm lẫn nhất định giữa các lớp có bản chất rất giống nhau.
+
+\subsection{So sánh AST-S và AST-P}
+
+Kết quả trong Bảng~\ref{tab:us8k_results} cho thấy:
+
+\begin{itemize}
+    \item Pretraining trên AudioSet mang lại mức cải thiện đáng kể về hiệu năng:
+    từ khoảng 79.75\% (AST-S) lên 86.31\% (AST-P), tương đương
+    tăng khoảng 6.5 điểm phần trăm trên UrbanSound8K.
+    \item Độ lệch chuẩn giữa các fold của hai cấu hình đều ở mức khoảng 4\%, cho thấy
+    hiệu năng ổn định trên các fold khác nhau, mặc dù một số fold vẫn khó hơn
+    do phân bố lớp và điều kiện thu âm.
+    \item Khoảng cách giữa độ chính xác huấn luyện (gần 100\% ở các epoch cuối)
+    và độ chính xác kiểm thử (khoảng 80–86\%) cho thấy mô hình vẫn có hiện tượng
+    overfitting ở cả hai cấu hình. Tuy nhiên, với cùng một pipeline huấn luyện,
+    việc sử dụng trọng số tiền huấn luyện từ AudioSet giúp cải thiện đáng kể khả năng
+    tổng quát hóa trên tập kiểm thử.
+\end{itemize}
+
+Nhìn chung, kết quả thực nghiệm trên UrbanSound8K phù hợp với kết luận của tác giả
+AST: pretraining trên một tập dữ liệu âm thanh lớn như AudioSet mang lại lợi ích rõ rệt
+cho các bài toán phân loại âm thanh môi trường trên những tập dữ liệu quy mô vừa và nhỏ.
+Trong bối cảnh bài toán này, AST-P không chỉ đạt độ chính xác cao hơn mà còn
+giữ được độ ổn định tốt trên 10 fold, thể hiện vai trò quan trọng của pretraining
+đúng miền dữ liệu so với chỉ pretraining trên ImageNet.
