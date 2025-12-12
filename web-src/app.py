@@ -14,19 +14,19 @@ import librosa.display
 from ast_models import ASTModel 
 
 # 1. CẤU HÌNH & MODEL VERSIONS
-st.set_page_config(page_title="UrbanSound8K Model Comparison", page_icon="🎧", layout="wide")
+st.set_page_config(page_title="AST - UrbanSound8K", layout="wide")
 
 # Định nghĩa các phiên bản Model tại đây
 MODEL_VERSIONS = {
-    "AST-P (Base384)": {
+    "AST-P": {
         "path": "./models/AST-P",
         "model_size": "base384", # Cần khớp với lúc train (base384/base224)
         "description": "Model AST-P (Pretrained ImageNet + AudioSet)"
     },
-    "AST-S (Small/Student)": {
+    "AST-S": {
         "path": "./models/AST-S",
         "model_size": "base384", # <--- QUAN TRỌNG: Nếu AST-S là kiến trúc nhỏ hơn, hãy sửa thành 'base224' hoặc config tương ứng
-        "description": "Model AST-S (Experimental Version - Coming Soon)"
+        "description": "Pretrained ImageNet"
     }
 }
 
@@ -182,11 +182,11 @@ def ensemble_predict(audio_input, version_config):
     return LABELS[final_idx], avg_probs[0][final_idx].item(), avg_probs[0].cpu().numpy(), spec_vis
 
 # --- GIAO DIỆN CHÍNH ---
-st.title("🎧 UrbanSound8K Analysis System")
+st.title("UrbanSound8K Analysis System")
 st.markdown("---")
 
 # 1. Sidebar chọn Model
-st.sidebar.header("⚙️ Cấu hình Model")
+st.sidebar.header("Cấu hình Model")
 selected_version_name = st.sidebar.selectbox(
     "Chọn phiên bản Model:",
     list(MODEL_VERSIONS.keys())
@@ -199,24 +199,45 @@ st.sidebar.warning(f"**Đường dẫn:** `{current_config['path']}`")
 # 2. Input Audio
 col1, col2 = st.columns([1, 2])
 
+# Initialize session state to track the last used input source
+if "last_input_source" not in st.session_state:
+    st.session_state.last_input_source = None
+
+# Callback functions to track which input was just used
+def on_upload_change():
+    st.session_state.last_input_source = "upload"
+
+def on_mic_change():
+    st.session_state.last_input_source = "mic"
+
 with col1:
     st.subheader("1. Nhập liệu")
-    tab_up, tab_mic = st.tabs(["📂 Upload File", "🎙️ Ghi âm"])
+    tab_up, tab_mic = st.tabs(["Upload File", "Ghi âm"])
     input_data = None
 
     with tab_up:
-        up_file = st.file_uploader("Chọn file .wav", type=["wav"])
-        if up_file: input_data = up_file.read()
-
+        up_file = st.file_uploader("Chọn file .wav", type=["wav"], key="uploader", on_change=on_upload_change)
+        
     with tab_mic:
-        mic_file = st.audio_input("Bắt đầu ghi âm")
-        if mic_file: input_data = mic_file
+        mic_file = st.audio_input("Bắt đầu ghi âm", key="mic", on_change=on_mic_change)
+
+    # Determine which input to use based on last interaction
+    if st.session_state.last_input_source == "upload" and up_file:
+        input_data = up_file.read()
+        up_file.seek(0)
+    elif st.session_state.last_input_source == "mic" and mic_file:
+        input_data = mic_file
+    elif up_file and not mic_file:
+        input_data = up_file.read()
+        up_file.seek(0)
+    elif mic_file and not up_file:
+        input_data = mic_file
 
 with col2:
     st.subheader("2. Kết quả phân tích")
     if input_data:
         # Nút bấm phân tích
-        if st.button("🚀 Chạy mô hình " + selected_version_name, type="primary"):
+        if st.button("Chạy mô hình " + selected_version_name, type="primary"):
             with st.spinner(f"Đang xử lý với {selected_version_name}..."):
                 lbl, conf, probs, spec_img = ensemble_predict(input_data, current_config)
                 
