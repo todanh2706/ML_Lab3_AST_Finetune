@@ -253,3 +253,30 @@ with col2:
                     # Hàng 2: Spectrogram + Biểu đồ cột
                     st.write("---")
                     sub_c1, sub_c2 = st.columns([3, 2])
+                    
+                    with sub_c1:
+                        st.write("**Mel Spectrogram**")
+                        if spec_img is not None:
+                            fig, ax = plt.subplots(figsize=(10, 4))
+                            # hop_length = sr * frame_shift_ms / 1000 = 16000 * 10 / 1000 = 160
+                            img = librosa.display.specshow(spec_img, sr=16000, hop_length=160, x_axis='time', y_axis='mel', ax=ax, cmap='magma')
+                            ax.set_xlabel("Thời gian (s)")
+                            ax.set_ylabel("Tần số Mel")
+                            plt.colorbar(img, ax=ax, format='%+2.0f dB')
+                            st.pyplot(fig)
+                            plt.close(fig)
+                    
+                    with sub_c2:
+                        st.write("**Xác suất các lớp**")
+                        fig2, ax2 = plt.subplots(figsize=(6, 4))
+                        colors = ['#4CAF50' if i == probs.argmax() else '#2196F3' for i in range(len(LABELS))]
+                        ax2.barh(LABELS, probs, color=colors)
+                        ax2.set_xlim(0, 1)
+                        ax2.set_xlabel("Xác suất")
+                        for i, v in enumerate(probs):
+                            ax2.text(v + 0.01, i, f'{v:.1%}', va='center', fontsize=8)
+                        plt.tight_layout()
+                        st.pyplot(fig2)
+                        plt.close(fig2)
+    else:
+        st.info("Vui lòng tải file âm thanh hoặc ghi âm để phân tích.")
