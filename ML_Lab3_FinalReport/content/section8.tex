@@ -1,35 +1,160 @@
+% \pagebreak
+% \section{So sánh với bài báo gốc và thảo luận}
+% \subsection{So sánh định lượng với bài báo gốc}
+% Do trong nghiên cứu gốc, tác giả không thực nghiệm trên tập dữ liệu UrbanSound8K nên phép so sánh được thực hiện thông qua việc đối chiếu \textbf{mức độ cải thiện hiệu năng} (performance gain) khi áp dụng pretraining trên AudioSet đối với các tập dữ liệu âm thanh môi trường tương đồng (ESC-50, SpeedCommands V2).\\
+% Kết quả thực nghiệm từ Bảng~\ref{tab:us8k_results} cho thấy sự chuyển dịch từ cấu hình khởi tạo ImageNet (AST-S) sang ImageNet kết hợp AudioSet (AST-P) giúp độ chính xác trên UrbanSound8K tăng từ $79.75\%$ lên $86.31\%$, tương đương mức tăng \textbf{$6.56\%$}. Con số này hoàn toàn tương thích với xu hướng được báo cáo trong nghiên cứu gốc, trên tập dữ liệu ESC-50 (có đặc tính gần với UrbanSound8K), việc sử dụng AudioSet pretraining giúp tăng độ chiinhs xác từ $88.7\%$ lên $95.6\%$ (mức tăng \textbf{$+6.9\%$} \cite{gong2021ast}. Điều này khẳng định rằng AST không tự động học tốt các đặc trưng âm thanh chỉ từ dữ liệu hình ảnh (ImageNet), mà cần sự bổ trợ mạnh mẽ từ dữ liệu miền âm thanh (AudioSet) để đạt hiệu năng tối ưu trên bài toán phân loại âm thanh.
+% \subsection{So sánh định lượng với mô hình CNN trên UrbanSound8K}
+% So sánh trực tiếp trên cùng bộ dữ liệu UrbanSound8K, nhóm đối chiếu kết quả AST với mô hình CNN tiêu biểu trong bài báo của Salamon và Bello (2016) \cite{salamon2016deep}. Trong nghiên cứu này, tác giả đề xuất kiến trúc SB-CNN và phân tích vai trò của data augmentation trong việc khắc phục hạn chế về quy mô dữ liệu gán nhãn cho bài toán phân loại âm thanh môi trường.
+
+% Theo phần Results của \cite{salamon2016deep}, mô hình SB-CNN khi huấn luyện không sử dụng augmentation đạt độ chính xác trung bình khoảng 0.73 (73\%), tương đương với các baseline cùng thời điểm như SKM (0.74) và PiczakCNN (0.73). Khi kết hợp các kỹ thuật augmentation (tập ``All'' gồm Time Stretching, Pitch Shifting, Dynamic Range Compression và Background Noise), độ chính xác của SB-CNN tăng lên khoảng 0.79 (79\%), tương ứng với mức cải thiện xấp xỉ 6 điểm phần trăm. Kết quả này cho thấy trong thiết lập CNN thuần túy, augmentation đóng vai trò quan trọng trong việc giúp mô hình khai thác tốt hơn tập dữ liệu UrbanSound8K có quy mô tương đối nhỏ.
+
+% So với các mốc trên, kết quả của nhóm trong Bảng~\ref{tab:us8k_results} cho thấy AST-S đạt độ chính xác trung bình 79.75\%, gần tương đương với SB-CNN khi sử dụng augmentation. Điều này cho thấy ngay cả khi chỉ khởi tạo từ ImageNet, kiến trúc Transformer vẫn có thể đạt mức hiệu năng tương đương với CNN được hỗ trợ mạnh bởi augmentation. Trong khi đó, cấu hình AST-P đạt độ chính xác 86.31\%, cao hơn SB-CNN (aug) khoảng 7.3 điểm phần trăm. Mức chênh lệch này phản ánh lợi thế rõ rệt của việc pretrain trên dữ liệu âm thanh quy mô lớn (AudioSet) so với cách tiếp cận CNN vốn chủ yếu dựa vào augmentation để bù đắp sự thiếu hụt dữ liệu.
+
+% Bài báo \cite{salamon2016deep} sử dụng đầu vào là log-Mel spectrogram và huấn luyện SB-CNN trên các TF-patch cố định dài 3 giây, sau đó tổng hợp dự đoán từ nhiều patch ở pha suy luận. Cách tiếp cận này khai thác hiệu quả các đặc trưng cục bộ theo thời gian và tần số, tuy nhiên vẫn bị giới hạn bởi khả năng học biểu diễn từ tập dữ liệu UrbanSound8K tương đối nhỏ. Ngược lại, AST-P được hưởng lợi từ các biểu diễn đã học trước trên AudioSet, giúp mô hình phân tách tốt hơn các lớp có đặc tính nhiễu nền và phổ tần chồng lấn mạnh như air\_conditioner, engine\_idling, drilling và jackhammer, phù hợp với các quan sát từ confusion matrix trong Bảng~\ref{tab:cm_astp} và Bảng~\ref{tab:cm_asts}.
+
+% Nói tóm lại, trong khi SB-CNN cho thấy việc kết hợp CNN với data augmentation có thể đạt kết quả tốt trên UrbanSound8K tại thời điểm nghiên cứu năm 2016, kết quả thực nghiệm của nhóm cho thấy hướng tiếp cận dựa trên Transformer kết hợp với pretrain trên dữ liệu âm thanh quy mô lớn mang lại mức cải thiện rõ rệt hơn, đặc biệt khi so sánh với các mô hình CNN phụ thuộc nhiều vào augmentation để nâng cao hiệu năng.
+
+% \subsection{Điểm mạnh và điểm yếu của mô hình thực nghiệm}
+% Dựa trên kết quả thực nghiệm và ma trận nhầm lẫn (confusion matrix), các ưu nhược điểm của mô hình được xác định như sau:\\
+% \textbf{Điểm mạnh:}
+% \begin{itemize}
+%     \item \textbf{Khả năng chuyển giao tri thức:} Mô hình chứng minh khả năng hội tụ nhanh và đạt độ chính xác cao chỉ với 3-5 epoch huấn luyện. Điều này cho thấy AST đã học được các biểu diễn đặc trưng rất mạnh từ quá trình pretraining, giúp giảm thiểu đáng kể chi phí tính toán cho các tác vụ phía sau.
+%     \item \textbf{Độ ổn định cao:} Độ lệch chuẩn giữa các fold chỉ khoảng $4\%$, cho thấy mô hình không phụ thuộc quá nhiều vào cách chia dữ liệu và có khả năng tổng quát hóa tốt trên các phân phối mẫu khác nhau.
+% \end{itemize}
+% \textbf{Điểm yếu:}
+% \begin{itemize}
+%     \item \textbf{Hiện tượng Overfitting:} Quan sát cho thấy độ chính xác trên tập huấn luyện tiệm cận $100\%$ trong khi tập kiểm thử chỉ đạt khoảng $86\%$. Khoảng cách lớn này chỉ ra rằng các cơ chế điều chuẩn (regularization) hiện tại chưa đủ mạnh để ngăn chặn mô hình "học vẹt" trên tập dữ liệu quy mô nhỏ như UrbanSound8K.
+%     \item \textbf{Khó khăn với các lớp nhiễu nền:} Phân tích định tính cho thấy mô hình gặp khó khăn trong việc phân biệt các âm thanh có tính chất nhiễu (noise-like) như \textit{air\_conditioner}, \textit{engine\_idling} và \textit{drilling}. Đây là hạn chế chung của việc sử dụng biểu diễn log-Mel spectrogram, nơi các đặc trưng tần số của các loại tiếng ồn này có sự chồng lấn lớn.
+% \end{itemize}
+% \subsection{Đề xuất cải tiến và hướng phát triển}
+% Để thu hẹp khoảng cách hiệu năng so với các kết quả SOTA trong bài báo gốc, một số cải tiến kỹ thuật được đề xuất:
+% \begin{enumerate}
+%     \item \textbf{Tăng cường chiến lược Augmentation:} Bài báo gốc sử dụng Mixup với hệ số $\alpha$ cao và SpecAugment mạnh tay. Việc tăng cường độ của các kỹ thuật này có thể giúp giảm thiểu hiện tượng overfitting đang quan sát thấy trên UrbanSound8K.
+%     \item \textbf{Sử dụng Model Ensemble:} Các kết quả tốt nhất trong bài báo gốc (trên AudioSet và ESC-50) đều đến từ việc kết hợp (ensemble) nhiều mô hình với các kích thước patch và stride khác nhau. Áp dụng kỹ thuật này (ví dụ: trung bình trọng số của các checkpoint từ các epoch khác nhau hoặc các fold khác nhau) hứa hẹn sẽ cải thiện đáng kể độ chính xác và độ ổn định.
+%     \item \textbf{Tối ưu hóa Resolution:} Thử nghiệm với stride nhỏ hơn (ví dụ: thay vì 10 như hiện tại, giảm xuống 5) có thể giúp mô hình nắm bắt tốt hơn các đặc trưng thời gian ngắn của các lớp âm thanh khó như tiếng khoan (drilling) hay tiếng búa máy (jackhammer), mặc dù sẽ làm tăng chi phí tính toán.
+% \end{enumerate}
+
 \pagebreak
 \section{So sánh với bài báo gốc và thảo luận}
+
 \subsection{So sánh định lượng với bài báo gốc}
-Do trong nghiên cứu gốc, tác giả không thực nghiệm trên tập dữ liệu UrbanSound8K nên phép so sánh được thực hiện thông qua việc đối chiếu \textbf{mức độ cải thiện hiệu năng} (performance gain) khi áp dụng pretraining trên AudioSet đối với các tập dữ liệu âm thanh môi trường tương đồng (ESC-50, SpeedCommands V2).\\
-Kết quả thực nghiệm từ Bảng~\ref{tab:us8k_results} cho thấy sự chuyển dịch từ cấu hình khởi tạo ImageNet (AST-S) sang ImageNet kết hợp AudioSet (AST-P) giúp độ chính xác trên UrbanSound8K tăng từ $79.75\%$ lên $86.31\%$, tương đương mức tăng \textbf{$6.56\%$}. Con số này hoàn toàn tương thích với xu hướng được báo cáo trong nghiên cứu gốc, trên tập dữ liệu ESC-50 (có đặc tính gần với UrbanSound8K), việc sử dụng AudioSet pretraining giúp tăng độ chiinhs xác từ $88.7\%$ lên $95.6\%$ (mức tăng \textbf{$+6.9\%$} \cite{gong2021ast}. Điều này khẳng định rằng AST không tự động học tốt các đặc trưng âm thanh chỉ từ dữ liệu hình ảnh (ImageNet), mà cần sự bổ trợ mạnh mẽ từ dữ liệu miền âm thanh (AudioSet) để đạt hiệu năng tối ưu trên bài toán phân loại âm thanh.
+
+Do trong nghiên cứu gốc, tác giả không thực nghiệm trực tiếp trên tập dữ liệu
+UrbanSound8K nên phép so sánh được thực hiện gián tiếp thông qua việc đối chiếu
+\textbf{mức độ cải thiện hiệu năng} (performance gain) khi áp dụng pretraining
+trên AudioSet đối với các tập dữ liệu âm thanh môi trường có đặc tính tương đồng
+như ESC-50 và Speech Commands V2.\\
+
+Kết quả thực nghiệm từ Bảng~\ref{tab:us8k_results} cho thấy sự chuyển dịch từ cấu hình
+khởi tạo ImageNet (AST-S) sang ImageNet kết hợp AudioSet (AST-P) giúp độ chính xác
+trên UrbanSound8K tăng từ $74.41\%$ lên $80.08\%$, tương đương mức cải thiện
+\textbf{$+5.67\%$}. Mặc dù mức tăng này thấp hơn so với một số báo cáo trong bài báo
+gốc, xu hướng cải thiện vẫn hoàn toàn nhất quán với kết luận của tác giả AST.
+
+Cụ thể, trong nghiên cứu gốc \cite{gong2021ast}, trên tập dữ liệu ESC-50 (có đặc tính
+gần với UrbanSound8K), việc sử dụng AudioSet pretraining giúp tăng độ chính xác từ
+$88.7\%$ lên $95.6\%$, tương đương mức cải thiện \textbf{$+6.9\%$}. Sự tương đồng
+về biên độ cải thiện cho thấy AudioSet đóng vai trò quan trọng trong việc cung cấp
+các biểu diễn âm thanh tổng quát mà mô hình khó có thể học được chỉ từ ImageNet.
+
+Những sai khác về mức độ cải thiện tuyệt đối có thể được lý giải bởi sự khác biệt
+về quy mô dữ liệu, cách chia fold, cấu hình huấn luyện và chiến lược regularization.
+Tuy nhiên, kết quả thực nghiệm vẫn khẳng định rằng AST không tự động học tốt các đặc
+trưng âm thanh chỉ từ dữ liệu hình ảnh, mà cần sự bổ trợ mạnh mẽ từ dữ liệu miền
+âm thanh như AudioSet để đạt hiệu năng tốt trên các bài toán phân loại âm thanh
+môi trường.
+
+
 \subsection{So sánh định lượng với mô hình CNN trên UrbanSound8K}
-So sánh trực tiếp trên cùng bộ dữ liệu UrbanSound8K, nhóm đối chiếu kết quả AST với mô hình CNN tiêu biểu trong bài báo của Salamon và Bello (2016) \cite{salamon2016deep}. Trong nghiên cứu này, tác giả đề xuất kiến trúc SB-CNN và phân tích vai trò của data augmentation trong việc khắc phục hạn chế về quy mô dữ liệu gán nhãn cho bài toán phân loại âm thanh môi trường.
 
-Theo phần Results của \cite{salamon2016deep}, mô hình SB-CNN khi huấn luyện không sử dụng augmentation đạt độ chính xác trung bình khoảng 0.73 (73\%), tương đương với các baseline cùng thời điểm như SKM (0.74) và PiczakCNN (0.73). Khi kết hợp các kỹ thuật augmentation (tập ``All'' gồm Time Stretching, Pitch Shifting, Dynamic Range Compression và Background Noise), độ chính xác của SB-CNN tăng lên khoảng 0.79 (79\%), tương ứng với mức cải thiện xấp xỉ 6 điểm phần trăm. Kết quả này cho thấy trong thiết lập CNN thuần túy, augmentation đóng vai trò quan trọng trong việc giúp mô hình khai thác tốt hơn tập dữ liệu UrbanSound8K có quy mô tương đối nhỏ.
+So sánh trực tiếp trên cùng bộ dữ liệu UrbanSound8K, nhóm đối chiếu kết quả AST với
+mô hình CNN tiêu biểu trong bài báo của Salamon và Bello (2016)
+\cite{salamon2016deep}. Trong nghiên cứu này, tác giả đề xuất kiến trúc SB-CNN và
+phân tích vai trò của data augmentation trong việc khắc phục hạn chế về quy mô
+dữ liệu gán nhãn cho bài toán phân loại âm thanh môi trường.
 
-So với các mốc trên, kết quả của nhóm trong Bảng~\ref{tab:us8k_results} cho thấy AST-S đạt độ chính xác trung bình 79.75\%, gần tương đương với SB-CNN khi sử dụng augmentation. Điều này cho thấy ngay cả khi chỉ khởi tạo từ ImageNet, kiến trúc Transformer vẫn có thể đạt mức hiệu năng tương đương với CNN được hỗ trợ mạnh bởi augmentation. Trong khi đó, cấu hình AST-P đạt độ chính xác 86.31\%, cao hơn SB-CNN (aug) khoảng 7.3 điểm phần trăm. Mức chênh lệch này phản ánh lợi thế rõ rệt của việc pretrain trên dữ liệu âm thanh quy mô lớn (AudioSet) so với cách tiếp cận CNN vốn chủ yếu dựa vào augmentation để bù đắp sự thiếu hụt dữ liệu.
+Theo phần \textit{Results} của \cite{salamon2016deep}, mô hình SB-CNN khi huấn luyện
+không sử dụng augmentation đạt độ chính xác trung bình khoảng $0.73$ (73\%), tương
+đương với các baseline cùng thời điểm như SKM (0.74) và PiczakCNN (0.73). Khi kết hợp
+các kỹ thuật augmentation (tập ``All'' gồm Time Stretching, Pitch Shifting, Dynamic
+Range Compression và Background Noise), độ chính xác của SB-CNN tăng lên khoảng
+$0.79$ (79\%), tương ứng với mức cải thiện xấp xỉ 6 điểm phần trăm. Kết quả này cho
+thấy trong thiết lập CNN thuần túy, augmentation đóng vai trò then chốt trong việc
+bù đắp sự thiếu hụt dữ liệu huấn luyện.
 
-Bài báo \cite{salamon2016deep} sử dụng đầu vào là log-Mel spectrogram và huấn luyện SB-CNN trên các TF-patch cố định dài 3 giây, sau đó tổng hợp dự đoán từ nhiều patch ở pha suy luận. Cách tiếp cận này khai thác hiệu quả các đặc trưng cục bộ theo thời gian và tần số, tuy nhiên vẫn bị giới hạn bởi khả năng học biểu diễn từ tập dữ liệu UrbanSound8K tương đối nhỏ. Ngược lại, AST-P được hưởng lợi từ các biểu diễn đã học trước trên AudioSet, giúp mô hình phân tách tốt hơn các lớp có đặc tính nhiễu nền và phổ tần chồng lấn mạnh như air\_conditioner, engine\_idling, drilling và jackhammer, phù hợp với các quan sát từ confusion matrix trong Bảng~\ref{tab:cm_astp} và Bảng~\ref{tab:cm_asts}.
+So với các mốc trên, kết quả của nhóm trong Bảng~\ref{tab:us8k_results} cho thấy
+AST-S đạt độ chính xác trung bình $74.41\%$, thấp hơn SB-CNN khi sử dụng augmentation.
+Điều này phản ánh thực tế rằng việc chỉ khởi tạo từ ImageNet là chưa đủ để khai thác
+hiệu quả tập dữ liệu UrbanSound8K có quy mô và độ đa dạng hạn chế.
 
-Nói tóm lại, trong khi SB-CNN cho thấy việc kết hợp CNN với data augmentation có thể đạt kết quả tốt trên UrbanSound8K tại thời điểm nghiên cứu năm 2016, kết quả thực nghiệm của nhóm cho thấy hướng tiếp cận dựa trên Transformer kết hợp với pretrain trên dữ liệu âm thanh quy mô lớn mang lại mức cải thiện rõ rệt hơn, đặc biệt khi so sánh với các mô hình CNN phụ thuộc nhiều vào augmentation để nâng cao hiệu năng.
+Ngược lại, cấu hình AST-P đạt độ chính xác trung bình $80.08\%$, vượt qua SB-CNN
+(augmented) khoảng 1 điểm phần trăm. Mặc dù mức chênh lệch không quá lớn, kết quả
+này đạt được mà không cần áp dụng các chiến lược augmentation mạnh như trong
+\cite{salamon2016deep}, cho thấy lợi thế của việc pretraining trên dữ liệu âm thanh
+quy mô lớn so với cách tiếp cận CNN phụ thuộc nhiều vào augmentation để nâng cao
+hiệu năng.
+
+Ngoài ra, bài báo \cite{salamon2016deep} sử dụng đầu vào log-Mel spectrogram với các
+TF-patch cố định dài 3 giây và tổng hợp dự đoán từ nhiều patch ở pha suy luận. Cách
+tiếp cận này khai thác hiệu quả các đặc trưng cục bộ theo thời gian và tần số, tuy
+nhiên vẫn bị giới hạn bởi khả năng học biểu diễn từ tập dữ liệu UrbanSound8K tương
+đối nhỏ. Ngược lại, AST-P được hưởng lợi từ các biểu diễn đã học trước trên AudioSet,
+giúp mô hình phân tách tốt hơn các lớp có đặc tính nhiễu nền và phổ tần chồng lấn mạnh
+như \textit{air\_conditioner}, \textit{engine\_idling}, \textit{drilling} và
+\textit{jackhammer}, phù hợp với các quan sát từ confusion matrix trong
+Bảng~\ref{tab:cm_astp} và Bảng~\ref{tab:cm_asts}.
+
+Tóm lại, trong khi SB-CNN cho thấy hiệu quả của CNN kết hợp với data augmentation
+trong bối cảnh năm 2016, kết quả thực nghiệm của nhóm cho thấy hướng tiếp cận dựa
+trên Transformer kết hợp với pretraining trên dữ liệu âm thanh quy mô lớn mang lại
+hiệu năng cạnh tranh và ổn định hơn, ngay cả khi không phụ thuộc nhiều vào
+augmentation.
+
 
 \subsection{Điểm mạnh và điểm yếu của mô hình thực nghiệm}
-Dựa trên kết quả thực nghiệm và ma trận nhầm lẫn (confusion matrix), các ưu nhược điểm của mô hình được xác định như sau:\\
+
+Dựa trên kết quả thực nghiệm và phân tích confusion matrix, các ưu nhược điểm của
+mô hình được xác định như sau:
+
 \textbf{Điểm mạnh:}
 \begin{itemize}
-    \item \textbf{Khả năng chuyển giao tri thức:} Mô hình chứng minh khả năng hội tụ nhanh và đạt độ chính xác cao chỉ với 3-5 epoch huấn luyện. Điều này cho thấy AST đã học được các biểu diễn đặc trưng rất mạnh từ quá trình pretraining, giúp giảm thiểu đáng kể chi phí tính toán cho các tác vụ phía sau.
-    \item \textbf{Độ ổn định cao:} Độ lệch chuẩn giữa các fold chỉ khoảng $4\%$, cho thấy mô hình không phụ thuộc quá nhiều vào cách chia dữ liệu và có khả năng tổng quát hóa tốt trên các phân phối mẫu khác nhau.
+    \item \textbf{Khả năng chuyển giao tri thức:} Mô hình cho thấy khả năng tận dụng
+    hiệu quả tri thức từ AudioSet, giúp đạt mức cải thiện rõ rệt về độ chính xác chỉ
+    sau 3--5 epoch huấn luyện. Điều này cho thấy AST đã học được các biểu diễn âm
+    thanh có tính tổng quát cao trong giai đoạn pretraining.
+    \item \textbf{Khả năng phân biệt các lớp phức tạp:} So với AST-S, cấu hình AST-P
+    giảm đáng kể mức độ nhầm lẫn giữa các lớp tiếng ồn công nghiệp và tiếng nền đô
+    thị, thể hiện rõ qua các confusion matrix tổng hợp.
 \end{itemize}
+
 \textbf{Điểm yếu:}
 \begin{itemize}
-    \item \textbf{Hiện tượng Overfitting:} Quan sát cho thấy độ chính xác trên tập huấn luyện tiệm cận $100\%$ trong khi tập kiểm thử chỉ đạt khoảng $86\%$. Khoảng cách lớn này chỉ ra rằng các cơ chế điều chuẩn (regularization) hiện tại chưa đủ mạnh để ngăn chặn mô hình "học vẹt" trên tập dữ liệu quy mô nhỏ như UrbanSound8K.
-    \item \textbf{Khó khăn với các lớp nhiễu nền:} Phân tích định tính cho thấy mô hình gặp khó khăn trong việc phân biệt các âm thanh có tính chất nhiễu (noise-like) như \textit{air\_conditioner}, \textit{engine\_idling} và \textit{drilling}. Đây là hạn chế chung của việc sử dụng biểu diễn log-Mel spectrogram, nơi các đặc trưng tần số của các loại tiếng ồn này có sự chồng lấn lớn.
+    \item \textbf{Hiện tượng overfitting:} Độ chính xác trên tập huấn luyện
+    (khoảng 81--87\%) vẫn cao hơn đáng kể so với tập kiểm thử
+    (khoảng 74--80\%), cho thấy mô hình chưa hoàn toàn khắc phục được overfitting
+    khi làm việc với tập dữ liệu quy mô vừa và nhỏ như UrbanSound8K.
+    \item \textbf{Khó khăn với các lớp nhiễu nền:} Các lớp như
+    \textit{air\_conditioner}, \textit{engine\_idling} và \textit{drilling}
+    vẫn còn bị nhầm lẫn tương đối nhiều do đặc trưng phổ tần chồng lấn trong biểu
+    diễn log-Mel spectrogram.
 \end{itemize}
+
+
 \subsection{Đề xuất cải tiến và hướng phát triển}
-Để thu hẹp khoảng cách hiệu năng so với các kết quả SOTA trong bài báo gốc, một số cải tiến kỹ thuật được đề xuất:
+
+Để tiếp tục cải thiện hiệu năng và thu hẹp khoảng cách với các kết quả SOTA được
+báo cáo trong bài báo gốc, một số hướng cải tiến được đề xuất:
+
 \begin{enumerate}
-    \item \textbf{Tăng cường chiến lược Augmentation:} Bài báo gốc sử dụng Mixup với hệ số $\alpha$ cao và SpecAugment mạnh tay. Việc tăng cường độ của các kỹ thuật này có thể giúp giảm thiểu hiện tượng overfitting đang quan sát thấy trên UrbanSound8K.
-    \item \textbf{Sử dụng Model Ensemble:} Các kết quả tốt nhất trong bài báo gốc (trên AudioSet và ESC-50) đều đến từ việc kết hợp (ensemble) nhiều mô hình với các kích thước patch và stride khác nhau. Áp dụng kỹ thuật này (ví dụ: trung bình trọng số của các checkpoint từ các epoch khác nhau hoặc các fold khác nhau) hứa hẹn sẽ cải thiện đáng kể độ chính xác và độ ổn định.
-    \item \textbf{Tối ưu hóa Resolution:} Thử nghiệm với stride nhỏ hơn (ví dụ: thay vì 10 như hiện tại, giảm xuống 5) có thể giúp mô hình nắm bắt tốt hơn các đặc trưng thời gian ngắn của các lớp âm thanh khó như tiếng khoan (drilling) hay tiếng búa máy (jackhammer), mặc dù sẽ làm tăng chi phí tính toán.
+    \item \textbf{Tăng cường chiến lược Augmentation:} Áp dụng mạnh hơn các kỹ thuật
+    như SpecAugment hoặc Mixup với hệ số phù hợp có thể giúp giảm overfitting và
+    cải thiện khả năng tổng quát hóa trên UrbanSound8K.
+    \item \textbf{Sử dụng Model Ensemble:} Kết hợp nhiều checkpoint từ các epoch
+    khác nhau hoặc các fold khác nhau được kỳ vọng sẽ cải thiện độ ổn định và độ
+    chính xác tổng thể, tương tự chiến lược ensemble được sử dụng trong
+    \cite{gong2021ast}.
+    \item \textbf{Tối ưu hóa độ phân giải thời gian--tần số:} Giảm stride theo trục
+    thời gian hoặc tần số có thể giúp mô hình nắm bắt tốt hơn các đặc trưng ngắn hạn
+    của các lớp khó như \textit{drilling} và \textit{jackhammer}, mặc dù sẽ làm tăng
+    chi phí tính toán.
 \end{enumerate}

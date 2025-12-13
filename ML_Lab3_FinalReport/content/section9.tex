@@ -1,2 +1,47 @@
 \pagebreak
 \section{Mô tả ứng dụng}
+Nhóm đã xây dựng một ứng dụng web hoàn chỉnh để phân tích và phân loại âm thanh đô thị (UrbanSound8K). Ứng dụng không chỉ đưa ra dự đoán nhãn (như tiếng còi xe, tiếng nhạc đường phố...) mà còn cung cấp cái nhìn sâu sâu bên trong dữ liệu thông qua các biểu đồ trực quan hóa. Hệ thống cho phép người dùng tải file âm thanh hoặc ghi âm trực tiếp, sau đó xử lý qua mô hình Audio Spectrogram Transformer (AST).\\
+Điểm nổi bật của phiên bản này là khả năng hiển thị biểu đồ \textbf{Log-Mel Spectrogram} và biểu đồ xác suất cho từng lớp, giúp người dùng hiểu rõ hơn về độ tin cậy của mô hình.\\
+
+Các công nghệ và thư viện chính:
+\begin{itemize}
+    \item \textbf{Streamlit:} Xây dựng giao diện tương tác, xử lý luồng nhập liệu từ microphone và file upload.
+    \item \textbf{PyTorch \& Torchaudio:} Nền tảng Deep Learning dùng để vận hành mô hình AST và chuyển đổi tín hiệu âm thanh sang dạng phổ.
+    \item \textbf{Librosa \& Matplotlib:} Được bổ sung để vẽ biểu đồ trực quan. \textit{Librosa} hỗ trợ hiển thị Spectrogram với thang đo Mel chuẩn xác, trong khi \textit{Matplotlib} vẽ biểu đồ cột phân phối xác suất với màu sắc trực quan.
+    \item \textbf{Soundfile \& Numpy:} Xử lý đọc/ghi file âm thanh và các phép toán ma trận số học.
+\end{itemize}
+
+\subsection{Cơ chế Ensemble Learning}
+Để tăng độ chính xác và giảm thiểu variance của mô hình, ứng dụng áp dụng kỹ thuật \textbf{Ensemble Averaging} trên 10 folds của bộ dữ liệu UrbanSound8K. Thay vì chỉ dựa vào một bộ trọng số duy nhất, hệ thống thực hiện quy trình sau:
+
+\begin{enumerate}
+    \item \textbf{Load Multi-Weights:} Hệ thống lần lượt tải trọng số từ 10 file model đã được huấn luyện trước (từ \texttt{ast\_us8k\_fold1.pth} đến \texttt{ast\_us8k\_fold10.pth}).
+    \item \textbf{Softmax Averaging:} Với mỗi model $i$ (trong 10 models), input được đưa qua mạng để tính ra vector xác suất $P_i$ thông qua hàm Softmax:
+    $$ P_i = \text{Softmax}(\text{Model}_i(x)) $$
+    \item \textbf{Tổng hợp kết quả:} Kết quả cuối cùng là trung bình cộng của các vector xác suất từ tất cả các models hợp lệ:
+    $$ P_{\text{final}} = \frac{1}{N} \sum_{i=1}^{N} P_i $$
+    \item \textbf{Quyết định nhãn:} Nhãn có giá trị xác suất cao nhất trong vector $P_{\text{final}}$ sẽ được chọn làm kết quả dự đoán (Argmax).
+\end{enumerate}
+
+Phương pháp này giúp mô hình hoạt động ổn định hơn, tránh việc bị nhiễu bởi các đặc điểm cục bộ (bias) của một lần huấn luyện đơn lẻ.
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.9\linewidth]{demo.png} 
+%     \caption{Giao diện hiển thị Spectrogram và Phân phối xác suất Ensemble}
+%     \label{fig:app_vis}
+% \end{figure}
+
+\section{Hướng dẫn sử dụng}
+\begin{itemize}
+    \item \textbf{Bước 1 - Cấu hình:} Tại thanh bên trái, chọn phiên bản kiến trúc mô hình (AST-P hoặc AST-S). Hệ thống sẽ hiển thị đường dẫn và mô tả tương ứng.
+    \item \textbf{Bước 2 - Nhập liệu:} Người dùng chọn tab \textbf{"Upload File"} để tải file .wav hoặc tab \textbf{"Ghi âm"} để thu tín hiệu trực tiếp.
+    \item \textbf{Bước 3 - Phân tích:} Nhấn nút \textbf{"Chạy mô hình..."}. Hệ thống sẽ hiển thị thanh tiến trình chạy qua 10 folds.
+    \item \textbf{Bước 4 - Xem kết quả:}
+    \begin{itemize}
+        \item \textbf{Kết quả chính:} Hiển thị nhãn dự đoán và độ tin cậy tổng hợp.
+        \item \textbf{Audio Player:} Nghe lại đoạn âm thanh vừa phân tích.
+        \item \textbf{Mel Spectrogram:} Biểu đồ nhiệt (heatmap) thể hiện đặc trưng âm thanh đầu vào.
+        \item \textbf{Xác suất các lớp:} Biểu đồ cột ngang so sánh tỉ lệ dự đoán giữa 10 lớp, thanh màu xanh lá cây biểu thị kết quả được chọn.
+    \end{itemize}
+\end{itemize}
