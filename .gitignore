@@ -3,3 +3,4 @@
 **/models
 ignore/
 pyenv
+.DS_Store
