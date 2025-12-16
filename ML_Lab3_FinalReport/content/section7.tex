@@ -204,60 +204,13 @@ confusion matrix trên toàn bộ 10 fold cho từng cấu hình. Thứ tự cá
 bảng là:
 air\_conditioner, car\_horn, children\_playing, dog\_bark,
 drilling, engine\_idling, gun\_shot, jackhammer, siren, street\_music.
-
-\begin{table}[h]
+\begin{figure}[H]
     \centering
-    \scriptsize
-    \setlength{\tabcolsep}{3pt}
-    \begin{tabular}{lrrrrrrrrrr}
-        \hline
-        Thật \textbackslash\ Dự đoán
-        & air\_cond. & car\_horn & child\_play & dog\_bark
-        & drilling & eng\_idle & gun\_shot & jackhammer & siren & street\_music \\
-        \hline
-        air\_cond.    & 463 &   3 &  78 & 127 &  12 & 181 &   1 &   0 &  33 & 102 \\
-        car\_horn     &   4 & 324 &   5 &  26 &   5 &   0 &   0 &   2 &  32 &  31 \\
-        child\_play   &   2 &   0 & 955 &   9 &   7 &   1 &   0 &   0 &  11 &  15 \\
-        dog\_bark     &   8 &   0 &  20 & 957 &   0 &   0 &   2 &   0 &   6 &   7 \\
-        drilling      &  55 &   0 &  12 &  28 & 773 &  68 &   1 &   6 &  15 &  42 \\
-        eng\_idle     &  28 &   4 &  32 &  12 &  11 & 860 &   0 &   6 &  28 &  19 \\
-        gun\_shot     &   4 &   0 &   0 &  10 &   0 &   0 & 360 &   0 &   0 &   0 \\
-        jackhammer    &  44 &   0 &   4 &  17 & 104 & 212 &   3 & 544 &  17 &  55 \\
-        siren         &   1 &   2 &  13 &  10 &   0 &   0 &   0 &   0 & 891 &  12 \\
-        street\_music &   1 &   4 & 106 &   9 &   0 &   0 &   0 &   1 &  22 & 857 \\
-        \hline
-    \end{tabular}
-    \caption{Confusion matrix tổng hợp của cấu hình AST-P trên UrbanSound8K.}
-    \label{tab:cm_astp}
-\end{table}
-
-\begin{table}[h]
-    \centering
-    \scriptsize
-    \setlength{\tabcolsep}{3pt}
-    \begin{tabular}{lrrrrrrrrrr}
-        \hline
-        Thật \textbackslash\ Dự đoán
-        & air\_cond. & car\_horn & child\_play & dog\_bark
-        & drilling & eng\_idle & gun\_shot & jackhammer & siren & street\_music \\
-        \hline
-        air\_cond.    & 677 &   1 &  14 &  55 &  18 &  56 &   0 &   1 &  27 & 151 \\
-        car\_horn     &   8 & 303 &   1 &  10 &  15 &   1 &   0 &   1 &  37 &  53 \\
-        child\_play   &   6 &   1 & 861 &  46 &   8 &   2 &   2 &   0 &  21 &  53 \\
-        dog\_bark     &  21 &   5 &  38 & 888 &   9 &   6 &   4 &   0 &  13 &  16 \\
-        drilling      & 119 &  14 &  10 &  12 & 714 &  17 &  19 &  11 &  21 &  63 \\
-        eng\_idle     & 314 &   4 &  36 &  26 &  11 & 519 &   1 &  21 &  21 &  47 \\
-        gun\_shot     &  10 &   1 &   0 &   7 &   2 &   0 & 354 &   0 &   0 &   0 \\
-        jackhammer    & 172 &   5 &   3 &   1 &  59 & 140 &  14 & 493 &   0 & 113 \\
-        siren         &  12 &   7 &   9 &  16 &  17 &   0 &   1 &  25 & 800 &  42 \\
-        street\_music &  14 &   9 &  49 &   6 &   3 &   0 &   0 &   0 &  29 & 890 \\
-        \hline
-    \end{tabular}
-    \caption{Confusion matrix tổng hợp của cấu hình AST-S trên UrbanSound8K.}
-    \label{tab:cm_asts}
-\end{table}
-
-Từ hai confusion matrix trong Bảng~\ref{tab:cm_astp} và Bảng~\ref{tab:cm_asts},
+    \includegraphics[width=0.75\linewidth]{img/confusion_matrix.png}
+    \caption{Ma trận nhầm lẫn thể hiện khả năng dự đoán của 2 cấu hình}
+    \label{fig:conf_matrix}
+\end{figure}
+Từ hai confusion matrix trong Hình~\ref{fig:conf_matrix},
 nhóm rút ra một số nhận xét định tính về hành vi của mô hình.
 
 \paragraph{Các lớp dễ phân biệt.}
