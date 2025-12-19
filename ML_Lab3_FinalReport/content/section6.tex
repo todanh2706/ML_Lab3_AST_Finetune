@@ -95,3 +95,28 @@ Cuối cùng, để tổng hợp kết quả, nhóm tính toán độ chính xá
 
 Việc sử dụng cùng một thiết lập huấn luyện và cùng chiến lược cross-validation cho cả AST-S và AST-P giúp việc so sánh trực tiếp tác động của tiền huấn luyện
 trên AudioSet đối với hiệu năng phân loại âm thanh môi trường trên UrbanSound8K.
+
+\subsection{Lí do chọn cấu hình}
+\subsubsection{Phân tích EDA dữ liệu}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{img/1_statistic_distribution.png}
+    \caption{Thống kê phân phối mẫu của các lớp}
+    \label{label:stats_distribution}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\linewidth]{img/2_waveform_spectrogram.png}
+    \caption{Waveform và spectrogram của các lớp}
+    \label{label:wavef_spectrogram}
+\end{figure}
+Kết quả phân tích dữ liệu khám phá (EDA) và rà soát kịch bản huấn luyện (training script) hiện tại cho thấy cấu hình tham số (hyperparameters) đang được thiết lập chưa tương thích tốt với đặc điểm phân bố của dữ liệu. Điều này dẫn đến sự lãng phí tài nguyên tính toán và nguy cơ mô hình không đạt được điểm hội tụ tối ưu (suboptimal convergence).\\
+Từ các biểu đồ thống kê và trực quan hóa tín hiệu trên, hai đặc điểm cốt lõi của tập dữ liệu UrbanSound8K đã được xác định:
+\begin{itemize}
+    \item \textbf{Phân bố thời gian (Temporal Distribution):} Biểu đồ histogram cho thấy mật độ tập trung cao của các mẫu dữ liệu ở độ dài $4.0$ giây. Rất ít mẫu vượt quá ngưỡng này.
+    \item \textbf{Sự mất cân bằng dữ liệu (Class Imbalance):} Tồn tại sự chênh lệch đáng kể về số lượng mẫu giữa các lớp. Cụ thể, các lớp như \texttt{car\_horn} và \texttt{gun\_shot} có số lượng mẫu thấp hơn khoảng $60\%$ so với các lớp đa số (như \texttt{engine\_idling}, \texttt{jackhammer}).
+\end{itemize}
+Khác với các tập dữ liệu hình ảnh thông thường (nơi các ảnh thường độc lập với nhau), UrbanSound8K có đặc thù về nguồn gốc dữ liệu. Cụ thể, dữ liệu là các file âm thanh ngắn (slices) được cắt ra từ các bản thu âm dài gốc. Nếu chia tập Train/Test một cách ngẫu nhiên (random split), rất có thể các đoạn cắt (slices) từ cùng một bản thu âm gốc sẽ nằm rải rác ở cả tập Train và tập Test, từ đó mô hình sẽ học thuộc lòng đặc trưng nền (background noise) của bản thu gốc thay vì học đặc trưng của loại âm thanh đó. Điều này dẫn đến kết quả kiểm thử cao giả tạo nhưng mô hình thực tế lại hoạt động kém. Việc sử dụng cột fold có sẵn trong file metadata (được thiết kế sao cho các đoạn cắt từ cùng một nguồn luôn nằm chung một fold) là biện pháp kỹ thuật bắt buộc để đảm bảo tính độc lập dữ liệu (Data Independence).\\
+Tuy nhiên, cấu hình huấn luyện hiện tại được đánh giá là chưa tối ưu dựa trên các luận điểm khoa học sau:
+\paragraph{Lãng phí tài nguyên tính toán do padding quá nhiều} Hiện tại, mô hình đang thiết lập độ dài đầu vào là 1024 frames (tương đương khoảng 10 giây). Tuy nhiên, thực tế dữ liệu chỉ dài trung bình 4 giây, điều này buộc hệ thống phải thực hiện kỹ thuật Zero-Padding (chèn các giá trị 0) vào khoảng $60\%$ kích thước của tensor đầu vào. Từ đó, cơ chế Self-Attention của Transformer phải thực hiện tính toán trên một vùng không gian thưa (sparse) chứa ít thông tin hữu ích. Điều này không chỉ gây lãng phí bộ nhớ GPU và thời gian huấn luyện mà còn có thể gây nhiễu cho quá trình trích xuất đặc trưng.
+\paragraph{Sai lệch mô hình do mất cân bằng dữ liệu} Việc không áp dụng các kỹ thuật cân bằng dữ liệu (Data Balancing) trong bối cảnh tập dữ liệu bị lệch (skewed dataset) khiến hàm mất mát (Loss function) sẽ bị chi phối bởi các lớp đa số. Từ đó, mô hình có xu hướng tối ưu hóa độ chính xác toàn cục bằng cách hy sinh khả năng nhận diện các lớp thiểu số (\texttt{gun\_shot}, \texttt{car\_horn}), dẫn đến chỉ số F1-Score thấp mặc dù Accuracy có thể cao.
