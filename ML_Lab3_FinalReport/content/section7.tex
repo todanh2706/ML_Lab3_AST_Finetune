@@ -155,6 +155,42 @@
 \pagebreak
 \section{Đánh giá và phân tích kết quả}
 
+\subsection{Thời gian huấn luyện mô hình (Kaggle Runtime)}
+
+Thời gian được ghi nhận trực tiếp từ Runtime hiển thị trên Kaggle Notebook cho từng notebook chạy thực nghiệm.
+Do Runtime phản ánh wall-clock time của toàn bộ notebook, giá trị này có thể bao gồm cả bước chuẩn bị dữ liệu và đánh giá,
+và có thể dao động nhẹ do tải hệ thống. Tuy nhiên, các notebook được chạy trên cùng nền tảng Kaggle (GPU) với pipeline nhất quán.
+
+
+Thí nghiệm gồm 10-fold cross-validation và hai cấu hình:
+AST-S (pretrain ImageNet) và AST-P (pretrain ImageNet+AudioSet).
+Do giới hạn thời gian chạy, nhóm chia thành 4 notebook tương ứng với 2 cấu hình $\times$ 2 nhóm fold (1--5 và 6--10).
+
+\paragraph{Liên kết notebook.}
+\begin{itemize}
+  \item \href{https://www.kaggle.com/code/danhthu/ast-with-urban8k-8ffe13?scriptVersionId=285726645}{AST-S (Folds 1--5) -- Notebook}
+  \item \href{https://www.kaggle.com/code/ngkhoanguynb/ast-with-urban8k-920691}{AST-S (Folds 6--10) -- Notebook}
+  \item \href{https://www.kaggle.com/code/hungnguyendang/ast-with-urban8k}{AST-P (Folds 1--5) -- Notebook}
+  \item \href{https://www.kaggle.com/code/cuongle6105/ast-with-urban8k-eda095}{AST-P (Folds 6--10) -- Notebook}
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{l l l}
+\hline
+Cấu hình & Nhóm fold & Runtime (hh:mm:ss) \\
+\hline
+AST-S (ImageNet) & 1--5  & 2:35:22 \\
+AST-S (ImageNet) & 6--10 & 2:22:01 \\
+AST-P (ImageNet+AudioSet) & 1--5  & 2:22:56 \\
+AST-P (ImageNet+AudioSet) & 6--10 & 2:29:46 \\
+\hline
+\end{tabular}
+\caption{Runtime ghi nhận từ Kaggle Notebook theo cấu hình và nhóm fold.}
+\label{tab:kaggle_runtime_by_config}
+\end{table}
+
+
 \subsection{Kết quả định lượng trên UrbanSound8K}
 
 Sau khi huấn luyện và lưu checkpoint cho từng fold, nhóm tiến hành đánh giá lại

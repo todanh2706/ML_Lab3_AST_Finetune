@@ -1,0 +1,3 @@
+\contentsline {table}{\numberline {1}{\ignorespaces Bảng tham số thực nghiệm cho các bộ dữ liệu AudioSet, SpeechCommands và ESC-50}}{9}{table.1}%
+\contentsline {table}{\numberline {2}{\ignorespaces Runtime ghi nhận từ Kaggle Notebook theo cấu hình và nhóm fold.}}{17}{table.2}%
+\contentsline {table}{\numberline {3}{\ignorespaces Kết quả 10-fold cross-validation trên UrbanSound8K cho hai cấu hình AST.}}{18}{table.3}%
