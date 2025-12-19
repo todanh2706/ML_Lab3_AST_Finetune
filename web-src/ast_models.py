@@ -27,6 +27,42 @@ class PatchEmbed(nn.Module):
         x = self.proj(x).flatten(2).transpose(1, 2)
         return x
 
+def _create_deit_model(model_size, imagenet_pretrain):
+    candidates_by_size = {
+        "base384": [
+            "vit_deit_base_distilled_patch16_384",
+            "deit_base_distilled_patch16_384"
+        ],
+        "base224": [
+            "vit_deit_base_distilled_patch16_224",
+            "deit_base_distilled_patch16_224"
+        ],
+    }
+    candidates = candidates_by_size.get(model_size, [])
+    if not candidates:
+        raise Exception('Model size must be base384 or base224')
+
+    try:
+        available = set(timm.list_models())
+    except Exception:
+        available = set()
+
+    for name in candidates:
+        if name in available:
+            return timm.create_model(name, pretrained=imagenet_pretrain)
+
+    last_err = None
+    for name in candidates:
+        try:
+            return timm.create_model(name, pretrained=imagenet_pretrain)
+        except Exception as err:
+            last_err = err
+
+    raise RuntimeError(
+        "Unknown timm model. Tried: {}".format(", ".join(candidates))
+    ) from last_err
+
+
 class ASTModel(nn.Module):
     def __init__(self, label_dim=527, input_fdim=128, input_tdim=1024, imagenet_pretrain=False, audioset_pretrain=False, model_size='base384', verbose=True):
         super(ASTModel, self).__init__()
@@ -43,11 +79,10 @@ class ASTModel(nn.Module):
         
         # Config cho base384 (giống trong notebook của bạn)
         if model_size == 'base384':
-            self.v = timm.create_model('vit_deit_base_distilled_patch16_384', pretrained=imagenet_pretrain)
+            self.v = _create_deit_model(model_size, imagenet_pretrain)
             self.original_num_patches = 576
-            
         elif model_size == 'base224':
-            self.v = timm.create_model('vit_deit_base_distilled_patch16_224', pretrained=imagenet_pretrain)
+            self.v = _create_deit_model(model_size, imagenet_pretrain)
             self.original_num_patches = 196
         else:
             raise Exception('Model size must be base384 or base224')

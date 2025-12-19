@@ -36,6 +36,18 @@ LABELS = [
     "Siren", "Street Music"
 ]
 
+def list_available_models(folder_path):
+    """Return sorted relative paths of .pth files under the given folder."""
+    if not os.path.isdir(folder_path):
+        return []
+    model_files = []
+    for root, _, files in os.walk(folder_path):
+        for file in files:
+            if file.lower().endswith(".pth"):
+                rel_path = os.path.relpath(os.path.join(root, file), folder_path)
+                model_files.append(rel_path)
+    return sorted(model_files)
+
 # 2. HÀM XỬ LÝ ÂM THANH
 def make_features(waveform, sr, target_length=1024, mel_bins=128):
     target_sr = 16000
@@ -97,7 +109,17 @@ def load_architecture_skeleton(model_size='base384'):
     return model, device
 
 # 4. HÀM PREDICT (Nhận cấu hình version)
-def ensemble_predict(audio_input, version_config):
+def ensemble_predict(audio_input, version_config, selected_models):
+    if not selected_models:
+        st.error("Vui long chon it nhat mot model truoc khi chay.")
+        return None, 0, np.zeros(len(LABELS)), None, {
+            "vote_mode": False,
+            "model_count": 0,
+            "majority_count": 0,
+            "used_models": [],
+            "vote_counts": None,
+            "per_model_results": []
+        }
     # Lấy thông tin từ config
     folder_path = version_config["path"]
     model_size = version_config["model_size"]
@@ -128,29 +150,40 @@ def ensemble_predict(audio_input, version_config):
             
     except Exception as e:
         st.error(f"Lỗi đọc file âm thanh: {str(e)}")
-        return None, 0, np.zeros(10), None
+        return None, 0, np.zeros(len(LABELS)), None, {
+            "vote_mode": False,
+            "model_count": 0,
+            "majority_count": 0,
+            "used_models": [],
+            "vote_counts": None,
+            "per_model_results": []
+        }
     input_tensor, spec_vis = make_features(waveform, sr)
     input_tensor = input_tensor.to(device)
     
-    sum_probs = torch.zeros(1, 10).to(device)
+    sum_probs = torch.zeros(1, len(LABELS)).to(device)
     
     # Tạo progress bar riêng cho từng lần chạy
     progress_text = st.empty()
     bar = st.progress(0)
     
-    valid_models_count = 0
+    total_models = len(selected_models)
+    used_models = []
+    votes = []
+    vote_counts = None
+    majority_count = 0
+    per_model_results = []
     
-    # Duyệt qua 10 fold trong folder tương ứng
-    for i in range(1, 11):
-        # Cập nhật tên file theo format mới của bạn: ast_us8k_foldX.pth
-        pth_path = os.path.join(folder_path, f"ast_us8k_fold{i}.pth")
+    for idx, model_name in enumerate(selected_models, start=1):
+        pth_path = os.path.join(folder_path, model_name)
         
         if not os.path.exists(pth_path): 
+            st.warning(f"Không tìm thấy file: {pth_path}")
+            bar.progress(min(int(idx / total_models * 100), 100))
             continue
             
-        valid_models_count += 1
-        progress_text.text(f"Đang chạy Fold {i} từ {folder_path}...")
-        bar.progress(i * 10)
+        progress_text.text(f"Đang chạy {model_name} ({idx}/{total_models}) từ {folder_path}...")
+        bar.progress(min(int(idx / total_models * 100), 100))
         
         try:
             state_dict = torch.load(pth_path, map_location=device)
@@ -165,6 +198,15 @@ def ensemble_predict(audio_input, version_config):
                 output = base_model(input_tensor)
                 probs = torch.softmax(output, dim=-1)
                 sum_probs += probs
+                pred_idx = probs.argmax(-1).item()
+                pred_prob = probs[0, pred_idx].item()
+                votes.append(pred_idx)
+                used_models.append(model_name)
+                per_model_results.append({
+                    "model": model_name,
+                    "label": LABELS[pred_idx],
+                    "prob": pred_prob
+                })
                 
         except Exception as e:
             st.warning(f"Lỗi tải {pth_path}: {e}")
@@ -172,14 +214,48 @@ def ensemble_predict(audio_input, version_config):
     bar.empty()
     progress_text.empty()
     
+    valid_models_count = len(used_models)
+    
     if valid_models_count == 0:
-        st.error(f"Không tìm thấy file model nào trong thư mục: {folder_path}")
-        return None, 0, np.zeros(10), spec_vis
+        st.error(f"Không tìm thấy file model nào đủ điều kiện chạy trong thư mục: {folder_path}")
+        return None, 0, np.zeros(len(LABELS)), spec_vis, {
+            "vote_mode": False,
+            "model_count": 0,
+            "majority_count": 0,
+            "used_models": [],
+            "vote_counts": None,
+            "per_model_results": []
+        }
 
     avg_probs = sum_probs / valid_models_count # Chia cho số model thực tế tìm thấy
-    final_idx = avg_probs.argmax(-1).item()
+    vote_mode = valid_models_count > 1
     
-    return LABELS[final_idx], avg_probs[0][final_idx].item(), avg_probs[0].cpu().numpy(), spec_vis
+    if vote_mode:
+        vote_counts = np.bincount(votes, minlength=len(LABELS))
+        majority_count = int(vote_counts.max())
+        top_indices = np.flatnonzero(vote_counts == majority_count)
+        
+        if len(top_indices) == 1:
+            final_idx = int(top_indices[0])
+        else:
+            top_idx_list = top_indices.tolist()
+            candidate_probs = avg_probs[0, top_idx_list]
+            final_idx = int(top_idx_list[int(candidate_probs.argmax().item())])
+            
+        conf_value = majority_count / valid_models_count
+    else:
+        final_idx = avg_probs.argmax(-1).item()
+        conf_value = avg_probs[0][final_idx].item()
+        majority_count = 1
+    
+    return LABELS[final_idx], conf_value, avg_probs[0].cpu().numpy(), spec_vis, {
+        "vote_mode": vote_mode,
+        "model_count": valid_models_count,
+        "majority_count": majority_count,
+        "used_models": used_models,
+        "vote_counts": vote_counts.tolist() if vote_counts is not None else None,
+        "per_model_results": per_model_results
+    }
 
 # --- GIAO DIỆN CHÍNH ---
 st.title("UrbanSound8K Analysis System")
@@ -195,6 +271,23 @@ current_config = MODEL_VERSIONS[selected_version_name]
 
 st.sidebar.info(f"**Mô tả:** {current_config['description']}")
 st.sidebar.warning(f"**Đường dẫn:** `{current_config['path']}`")
+
+available_models = list_available_models(current_config["path"])
+st.sidebar.subheader("Chọn model sử dụng")
+selected_models = []
+if not available_models:
+    st.sidebar.error(f"Không tìm thấy file .pth trong thư mục: {current_config['path']}")
+else:
+    for model_name in available_models:
+        safe_key = model_name.replace(os.sep, "__")
+        checkbox_key = f"{selected_version_name}_{safe_key}"
+        display_name = model_name.replace(os.sep, "/")
+        if checkbox_key not in st.session_state:
+            st.session_state[checkbox_key] = True
+        if st.sidebar.checkbox(display_name, key=checkbox_key):
+            selected_models.append(model_name)
+    if not selected_models:
+        st.sidebar.warning("Chọn ít nhất một model để chạy.")
 
 # 2. Input Audio
 col1, col2 = st.columns([1, 2])
@@ -238,45 +331,57 @@ with col2:
     if input_data:
         # Nút bấm phân tích
         if st.button("Chạy mô hình " + selected_version_name, type="primary"):
-            with st.spinner(f"Đang xử lý với {selected_version_name}..."):
-                lbl, conf, probs, spec_img = ensemble_predict(input_data, current_config)
-                
-                if lbl:
-                    # Hàng 1: Kết quả text + Audio player
-                    r1_c1, r1_c2 = st.columns(2)
-                    with r1_c1:
-                        st.success(f"Dự đoán: **{lbl}**")
-                        st.metric("Độ tin cậy", f"{conf:.1%}")
-                    with r1_c2:
-                        st.audio(input_data, format='audio/wav')
+            if not selected_models:
+                st.warning("Hãy chọn ít nhất một model ở phần cấu hình trước khi chạy.")
+            else:
+                with st.spinner(f"Đang xử lý với {selected_version_name}..."):
+                    lbl, conf, probs, spec_img, vote_info = ensemble_predict(input_data, current_config, selected_models)
+                    
+                    if lbl:
+                        label_idx = LABELS.index(lbl)
+                        # Hàng 1: Kết quả text + Audio player
+                        r1_c1, r1_c2 = st.columns(2)
+                        with r1_c1:
+                            st.success(f"Dự đoán: **{lbl}**")
+                            metric_label = "Tỷ lệ đồng thuận" if vote_info.get("vote_mode") else "Độ tin cậy"
+                            st.metric(metric_label, f"{conf:.1%}")
+                        if len(selected_models) > 1 and vote_info.get("per_model_results"):
+                            st.markdown("**Kết quả từng model:**")
+                            for item in vote_info["per_model_results"]:
+                                display_name = item["model"].replace(os.sep, "/")
+                                st.markdown(f"- `{display_name}`: {item['label']} ({item['prob']:.1%})")
+                        if vote_info.get("vote_mode"):
+                            st.caption(f"Council voting: {vote_info.get('majority_count', 0)}/{vote_info.get('model_count', 0)} model đồng ý.")
+                        with r1_c2:
+                            st.audio(input_data, format='audio/wav')
 
-                    # Hàng 2: Spectrogram + Biểu đồ cột
-                    st.write("---")
-                    sub_c1, sub_c2 = st.columns([3, 2])
-                    
-                    with sub_c1:
-                        st.write("**Mel Spectrogram**")
-                        if spec_img is not None:
-                            fig, ax = plt.subplots(figsize=(10, 4))
-                            # hop_length = sr * frame_shift_ms / 1000 = 16000 * 10 / 1000 = 160
-                            img = librosa.display.specshow(spec_img, sr=16000, hop_length=160, x_axis='time', y_axis='mel', ax=ax, cmap='magma')
-                            ax.set_xlabel("Thời gian (s)")
-                            ax.set_ylabel("Tần số Mel")
-                            plt.colorbar(img, ax=ax, format='%+2.0f dB')
-                            st.pyplot(fig)
-                            plt.close(fig)
-                    
-                    with sub_c2:
-                        st.write("**Xác suất các lớp**")
-                        fig2, ax2 = plt.subplots(figsize=(6, 4))
-                        colors = ['#4CAF50' if i == probs.argmax() else '#2196F3' for i in range(len(LABELS))]
-                        ax2.barh(LABELS, probs, color=colors)
-                        ax2.set_xlim(0, 1)
-                        ax2.set_xlabel("Xác suất")
-                        for i, v in enumerate(probs):
-                            ax2.text(v + 0.01, i, f'{v:.1%}', va='center', fontsize=8)
-                        plt.tight_layout()
-                        st.pyplot(fig2)
-                        plt.close(fig2)
+                        # Hàng 2: Spectrogram + Biểu đồ cột
+                        st.write("---")
+                        sub_c1, sub_c2 = st.columns([3, 2])
+                        
+                        with sub_c1:
+                            st.write("**Mel Spectrogram**")
+                            if spec_img is not None:
+                                fig, ax = plt.subplots(figsize=(10, 4))
+                                # hop_length = sr * frame_shift_ms / 1000 = 16000 * 10 / 1000 = 160
+                                img = librosa.display.specshow(spec_img, sr=16000, hop_length=160, x_axis='time', y_axis='mel', ax=ax, cmap='magma')
+                                ax.set_xlabel("Thời gian (s)")
+                                ax.set_ylabel("Tần số Mel")
+                                plt.colorbar(img, ax=ax, format='%+2.0f dB')
+                                st.pyplot(fig)
+                                plt.close(fig)
+                        
+                        with sub_c2:
+                            st.write("**Xác suất các lớp**")
+                            fig2, ax2 = plt.subplots(figsize=(6, 4))
+                            colors = ['#4CAF50' if i == label_idx else '#2196F3' for i in range(len(LABELS))]
+                            ax2.barh(LABELS, probs, color=colors)
+                            ax2.set_xlim(0, 1)
+                            ax2.set_xlabel("Xác suất")
+                            for i, v in enumerate(probs):
+                                ax2.text(v + 0.01, i, f'{v:.1%}', va='center', fontsize=8)
+                            plt.tight_layout()
+                            st.pyplot(fig2)
+                            plt.close(fig2)
     else:
         st.info("Vui lòng tải file âm thanh hoặc ghi âm để phân tích.")
